@@ -53,6 +53,11 @@ interface MatrixAuthenticationService {
     suspend fun cancelOidcLogin(): Result<Unit>
 
     /**
+     * Set the existing data about Element Classic session, if any.
+     */
+    fun setElementClassicSession(session: ElementClassicSession?)
+
+    /**
      * Attempt to login using the [callbackUrl] provided by the Oidc page.
      */
     suspend fun loginWithOidc(callbackUrl: String): Result<SessionId>

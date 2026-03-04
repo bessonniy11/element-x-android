@@ -5,11 +5,12 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-package io.element.android.features.login.impl.screens.onboarding.classic
+package io.element.android.features.login.impl.screens.checkclassic
 
-import io.element.android.libraries.architecture.AsyncAction
+import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.matrix.api.core.UserId
 
-class ConfirmingLoginWithElementClassic(
-    val userId: UserId,
-) : AsyncAction.Confirming
+data class CheckClassicState(
+    val elementClassicSession: AsyncData<UserId>,
+    val eventSink: (CheckClassicEvent) -> Unit,
+)
