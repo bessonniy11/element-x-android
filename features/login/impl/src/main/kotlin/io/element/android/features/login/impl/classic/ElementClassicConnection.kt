@@ -20,7 +20,6 @@ import android.os.Message
 import android.os.Messenger
 import android.os.RemoteException
 import androidx.core.os.BundleCompat
-import androidx.core.os.bundleOf
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
@@ -179,9 +178,9 @@ class DefaultElementClassicConnection(
                 try {
                     // Get the data
                     val msg = Message.obtain(null, MSG_GET_AVATAR)
-                    msg.data = bundleOf(
-                        KEY_USER_ID_STR to userId.value,
-                    )
+                    msg.data = Bundle().apply {
+                        putString(KEY_USER_ID_STR, userId.value)
+                    }
                     msg.replyTo = incomingMessenger
                     finalMessenger.send(msg)
                 } catch (e: RemoteException) {
