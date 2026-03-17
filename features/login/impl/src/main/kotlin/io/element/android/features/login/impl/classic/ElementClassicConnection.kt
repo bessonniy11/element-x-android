@@ -8,7 +8,6 @@
 package io.element.android.features.login.impl.classic
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Context.BIND_AUTO_CREATE
 import android.content.Intent
 import android.content.ServiceConnection
@@ -19,15 +18,16 @@ import android.os.IBinder
 import android.os.Message
 import android.os.Messenger
 import android.os.RemoteException
+import androidx.annotation.VisibleForTesting
 import androidx.core.os.BundleCompat
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.login.impl.BuildConfig
+import io.element.android.libraries.androidutils.service.ServiceBinder
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.core.uri.ensureProtocol
 import io.element.android.libraries.di.annotations.AppCoroutineScope
-import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.matrix.api.auth.ElementClassicSession
 import io.element.android.libraries.matrix.api.auth.HomeServerLoginCompatibilityChecker
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
@@ -65,8 +65,7 @@ private val loggerTag = LoggerTag("ECConnection")
 @ContributesBinding(AppScope::class)
 @SingleIn(AppScope::class)
 class DefaultElementClassicConnection(
-    @ApplicationContext
-    private val context: Context,
+    private val serviceBinder: ServiceBinder,
     @AppCoroutineScope
     private val coroutineScope: CoroutineScope,
     private val matrixAuthenticationService: MatrixAuthenticationService,
@@ -116,7 +115,7 @@ class DefaultElementClassicConnection(
             try {
                 val intentService = Intent()
                 intentService.setComponent(getElementClassicComponent())
-                if (context.bindService(intentService, serviceConnection, BIND_AUTO_CREATE)) {
+                if (serviceBinder.bindService(intentService, serviceConnection, BIND_AUTO_CREATE)) {
                     Timber.tag(loggerTag.value).d("Binding returned true")
                 } else {
                     // This happens when the app is not installed
@@ -134,7 +133,7 @@ class DefaultElementClassicConnection(
         Timber.tag(loggerTag.value).w("stop(): Unbinding (bound=$bound)")
         if (bound) {
             // Detach our existing connection.
-            context.unbindService(serviceConnection)
+            serviceBinder.unbindService(serviceConnection)
             bound = false
         }
         coroutineScope.launch {
@@ -205,42 +204,48 @@ class DefaultElementClassicConnection(
         override fun handleMessage(msg: Message) {
             Timber.tag(loggerTag.value).d("IncomingHandler handling message ${msg.what}")
             when (msg.what) {
-                MSG_GET_SESSION -> {
-                    // The data must be extracted from the bundle before we launch the coroutine, else the bundle will be emptied
-                    val state = msg.data.toElementClassicConnectionState()
-                    coroutineScope.launch {
-                        val updatedState = ensureHomeserverIsSupported(state)
-                        emitState(updatedState)
-                    }
-                }
-                MSG_GET_AVATAR -> {
-                    val currentState = stateFlow.value
-                    if (currentState is ElementClassicConnectionState.ElementClassicReady) {
-                        // Check that the userId is still the same
-                        val userId = msg.data?.getString(KEY_USER_ID_STR)
-                        if (userId != currentState.elementClassicSession.userId.value) {
-                            Timber.tag(loggerTag.value).w(
-                                "Received profile data for userId $userId but current" +
-                                    " userId is ${currentState.elementClassicSession.userId}, ignoring"
-                            )
-                        } else {
-                            val avatar = BundleCompat.getParcelable(msg.data, KEY_USER_AVATAR_PARCELABLE, Bitmap::class.java)
-                            val updatedState = currentState.copy(
-                                avatar = avatar,
-                            )
-                            coroutineScope.launch {
-                                emitState(updatedState)
-                            }
-                        }
-                    } else {
-                        Timber.tag(loggerTag.value).w("Received profile data but current state is not ElementClassicReady: %s", currentState)
-                    }
-                }
+                MSG_GET_SESSION -> onSessionReceived(msg.data)
+                MSG_GET_AVATAR -> onAvatarReceived(msg.data)
                 else -> {
                     Timber.tag(loggerTag.value).w("Received unknown message ${msg.what}")
                     super.handleMessage(msg)
                 }
             }
+        }
+    }
+
+    @VisibleForTesting
+    fun onSessionReceived(data: Bundle) {
+        // The data must be extracted from the bundle before we launch the coroutine, else the bundle will be emptied
+        val state = data.toElementClassicConnectionState()
+        coroutineScope.launch {
+            val updatedState = ensureHomeserverIsSupported(state)
+            emitState(updatedState)
+        }
+    }
+
+    @VisibleForTesting
+    fun onAvatarReceived(data: Bundle) {
+        val currentState = stateFlow.value
+        if (currentState is ElementClassicConnectionState.ElementClassicReady) {
+            // Check that the userId is still the same
+            val userId = data.getString(KEY_USER_ID_STR)
+            if (userId != currentState.elementClassicSession.userId.value) {
+                Timber.tag(loggerTag.value).w(
+                    "Received profile data for userId $userId but current" +
+                        " userId is ${currentState.elementClassicSession.userId}, ignoring"
+                )
+            } else {
+                val avatar = BundleCompat.getParcelable(data, KEY_USER_AVATAR_PARCELABLE, Bitmap::class.java)
+                val updatedState = currentState.copy(
+                    avatar = avatar,
+                )
+                coroutineScope.launch {
+                    emitState(updatedState)
+                }
+            }
+        } else {
+            Timber.tag(loggerTag.value).w("Received profile data but current state is not ElementClassicReady: %s", currentState)
         }
     }
 
@@ -331,7 +336,7 @@ class DefaultElementClassicConnection(
     }
 
     // Everything in this companion object must match what is defined in Element Classic
-    private companion object {
+    companion object {
         const val ELEMENT_CLASSIC_SERVICE_FULL_CLASS_NAME = "im.vector.app.features.importer.ImporterService"
 
         // Command to the service to get the userId/displayName/secrets of a verified session.
