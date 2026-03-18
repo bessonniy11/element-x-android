@@ -66,7 +66,6 @@ class LoginHelper(
         suspend {
             authenticationService.setHomeserver(homeserverUrl).recoverCatching { it ->
                 // No .well-known file?
-                // TODO Check for a better error
                 // If the homeserver is not reachable, try using resolvedHomeserverUrl.
                 if (resolvedHomeserverUrl != null && resolvedHomeserverUrl != homeserverUrl) {
                     authenticationService.setHomeserver(resolvedHomeserverUrl).getOrThrow()
