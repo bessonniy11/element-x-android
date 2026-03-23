@@ -19,6 +19,7 @@ import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.knock.KnockRequest
 import io.element.android.libraries.matrix.api.room.powerlevels.RoomPowerLevelsValues
 import io.element.android.libraries.matrix.api.room.powerlevels.UserRoleChange
+import io.element.android.libraries.matrix.api.room.threads.ThreadsListService
 import io.element.android.libraries.matrix.api.roomdirectory.RoomVisibility
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.widget.MatrixWidgetDriver
@@ -182,4 +183,6 @@ interface JoinedRoom : BaseRoom {
      * Subscribe to a [Flow] of [SendQueueUpdate] related to this room.
      */
     fun subscribeToSendQueueUpdates(): Flow<SendQueueUpdate>
+
+    suspend fun threadListService(): Result<ThreadsListService>
 }
