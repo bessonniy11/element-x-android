@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.features.messages.impl.MessagesMenuActions
 import io.element.android.features.messages.impl.SharedHistoryIcon
 import io.element.android.features.messages.impl.timeline.components.CallMenuItem
 import io.element.android.features.roomcall.api.RoomCallState
@@ -180,17 +181,24 @@ internal fun MessagesViewTopBarPreview() = ElementPreview {
         roomCallState: RoomCallState = RoomCallState.Unavailable,
         dmUserIdentityState: IdentityState? = null,
         sharedHistoryIcon: SharedHistoryIcon = SharedHistoryIcon.NONE,
+        displayThreads: Boolean = false,
     ) = MessagesViewTopBar(
         roomName = roomName,
         roomAvatar = roomAvatar,
         isTombstoned = isTombstoned,
         heroes = heroes,
-        roomCallState = roomCallState,
         dmUserIdentityState = dmUserIdentityState,
         sharedHistoryIcon = sharedHistoryIcon,
         onRoomDetailsClick = {},
-        onJoinCallClick = {},
         onBackClick = {},
+        menuActions = {
+            MessagesMenuActions(
+                roomCallState = roomCallState,
+                displayThreads = displayThreads,
+                onJoinCallClick = {},
+                onThreadsListClick = {},
+            )
+        }
     )
     Column {
         AMessagesViewTopBar()
@@ -230,6 +238,10 @@ internal fun MessagesViewTopBarPreview() = ElementPreview {
         AMessagesViewTopBar(
             roomName = "A room with world_readable history",
             sharedHistoryIcon = SharedHistoryIcon.WORLD_READABLE,
+        )
+        HorizontalDivider()
+        AMessagesViewTopBar(
+            displayThreads = true,
         )
     }
 }

@@ -297,8 +297,7 @@ class MessagesPresenter(
             roomMemberModerationState = roomMemberModerationState,
             topBarSharedHistoryIcon = topBarSharedHistoryIcon,
             successorRoom = roomInfo.successorRoom,
-            // TODO: add threads state
-            threads = Threads(hasThreads = false, hasUnreadThreads = false),
+            threads = Threads(hasThreads = true, hasUnreadThreads = false),
             eventSink = ::handleEvent,
         )
     }

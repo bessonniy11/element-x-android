@@ -47,6 +47,7 @@ import io.element.android.libraries.matrix.impl.room.member.RoomMemberListFetche
 import io.element.android.libraries.matrix.impl.room.threads.RustThreadsListService
 import io.element.android.libraries.matrix.impl.roomdirectory.map
 import io.element.android.libraries.matrix.impl.timeline.RustTimeline
+import io.element.android.libraries.matrix.impl.timeline.item.event.TimelineEventContentMapper
 import io.element.android.libraries.matrix.impl.util.MessageEventContent
 import io.element.android.libraries.matrix.impl.util.mxCallbackFlow
 import io.element.android.libraries.matrix.impl.widget.RustWidgetDriver
@@ -503,7 +504,15 @@ class JoinedRustRoom(
     }
 
     override suspend fun threadListService(): Result<ThreadsListService> {
-        return runCatchingExceptions { RustThreadsListService(innerRoom.threadListService()) }
+        return runCatchingExceptions {
+            RustThreadsListService(
+                inner = innerRoom.threadListService(),
+                contentMapper = TimelineEventContentMapper(),
+                roomCoroutineScope = roomCoroutineScope,
+            )
+        }.onFailure {
+            Timber.e(it, "Failed to create thread list service for room $roomId")
+        }
     }
 
     override fun close() = destroy()

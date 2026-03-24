@@ -7,12 +7,14 @@
 
 package io.element.android.libraries.matrix.api.room.threads
 
+import androidx.compose.runtime.Immutable
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageContent
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 
+@Immutable
 data class ThreadListItem(
     val rootEvent: ThreadListItemEvent,
     val latestEvent: ThreadListItemEvent?,
@@ -21,6 +23,7 @@ data class ThreadListItem(
     val threadId = rootEvent.eventId
 }
 
+@Immutable
 data class ThreadListItemEvent(
     val eventId: EventId,
     val senderId: UserId,

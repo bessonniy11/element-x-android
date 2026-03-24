@@ -12,11 +12,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -92,6 +92,7 @@ import io.element.android.features.messages.impl.topbars.MessagesViewTopBar
 import io.element.android.features.messages.impl.topbars.ThreadTopBar
 import io.element.android.features.messages.impl.voicemessages.composer.VoiceMessagePermissionRationaleDialog
 import io.element.android.features.messages.impl.voicemessages.composer.VoiceMessageSendingFailedDialog
+import io.element.android.features.roomcall.api.RoomCallState
 import io.element.android.libraries.androidutils.ui.hideKeyboard
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayout
@@ -138,6 +139,7 @@ fun MessagesView(
     onCreatePollClick: () -> Unit,
     onJoinCallClick: (isAudioCall: Boolean) -> Unit,
     onViewAllPinnedMessagesClick: () -> Unit,
+    onThreadsListClick: () -> Unit,
     modifier: Modifier = Modifier,
     forceJumpToBottomVisibility: Boolean = false,
     knockRequestsBannerView: @Composable () -> Unit,
@@ -233,20 +235,15 @@ fun MessagesView(
                             sharedHistoryIcon = state.topBarSharedHistoryIcon,
                             onBackClick = { hidingKeyboard { onBackClick() } },
                             onRoomDetailsClick = { hidingKeyboard { onRoomDetailsClick() } },
-                        ) {
-                            if (state.threads.hasThreads) {
-                                Icon(
-                                    imageVector = CompoundIcons.ThreadsSolid(),
-                                    contentDescription = "Threads",
+                            menuActions = {
+                                MessagesMenuActions(
+                                    displayThreads = state.timelineState.timelineMode !is Timeline.Mode.Thread && state.threads.hasThreads,
+                                    roomCallState = state.roomCallState,
+                                    onJoinCallClick = onJoinCallClick,
+                                    onThreadsListClick = onThreadsListClick
                                 )
-                                Spacer(Modifier.width(8.dp))
                             }
-                            CallMenuItem(
-                                roomCallState = state.roomCallState,
-                                onJoinCallClick = onJoinCallClick,
-                            )
-                            Spacer(Modifier.width(8.dp))
-                        }
+                        )
                     }
                 },
                 content = { padding ->
@@ -411,6 +408,28 @@ fun MessagesView(
         },
         state = state.linkState,
     )
+}
+
+@Composable
+internal fun MessagesMenuActions(
+    displayThreads: Boolean,
+    roomCallState: RoomCallState,
+    onJoinCallClick: (isAudioCall: Boolean) -> Unit,
+    onThreadsListClick: () -> Unit,
+) {
+    if (displayThreads) {
+        Icon(
+            modifier = Modifier.clickable(enabled = true, onClick = onThreadsListClick),
+            imageVector = CompoundIcons.ThreadsSolid(),
+            contentDescription = "Threads",
+        )
+        Spacer(Modifier.width(8.dp))
+    }
+    CallMenuItem(
+        roomCallState = roomCallState,
+        onJoinCallClick = onJoinCallClick,
+    )
+    Spacer(Modifier.width(8.dp))
 }
 
 @Composable
@@ -612,6 +631,7 @@ internal fun MessagesViewPreview(@PreviewParameter(MessagesStateProvider::class)
         onViewAllPinnedMessagesClick = { },
         forceJumpToBottomVisibility = true,
         knockRequestsBannerView = {},
+        onThreadsListClick = {},
     )
 }
 
@@ -663,7 +683,8 @@ internal fun MessagesViewA11yPreview() = ElementPreview {
         onSendLocationClick = {},
         onCreatePollClick = {},
         onJoinCallClick = {},
-        onViewAllPinnedMessagesClick = { },
+        onViewAllPinnedMessagesClick = {},
+        onThreadsListClick = {},
         forceJumpToBottomVisibility = true,
         knockRequestsBannerView = {},
     )

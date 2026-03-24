@@ -291,6 +291,7 @@ class ThreadedMessagesNode(
                     onViewAllPinnedMessagesClick = {},
                     modifier = modifier,
                     knockRequestsBannerView = {},
+                    onThreadsListClick = {},
                 )
 
                 roomMemberModerationRenderer.Render(

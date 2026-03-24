@@ -171,6 +171,8 @@ class RustMatrixClientFactory(
                     maxRetryTime = null,
                 )
             )
+            // TODO: remove this
+            .disableSslVerification()
             // Make sure all built clients use the single process cross-process lock config
             .crossProcessLockConfig(CrossProcessLockConfig.SingleProcess)
             .run {

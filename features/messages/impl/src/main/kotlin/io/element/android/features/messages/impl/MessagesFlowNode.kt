@@ -39,6 +39,7 @@ import io.element.android.features.messages.impl.pinned.DefaultPinnedEventsTimel
 import io.element.android.features.messages.impl.pinned.list.PinnedMessagesListNode
 import io.element.android.features.messages.impl.report.ReportMessageNode
 import io.element.android.features.messages.impl.threads.ThreadedMessagesNode
+import io.element.android.features.messages.impl.threads.list.ThreadsListNode
 import io.element.android.features.messages.impl.timeline.TimelineController
 import io.element.android.features.messages.impl.timeline.debug.EventDebugInfoNode
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
@@ -179,6 +180,9 @@ class MessagesFlowNode(
 
         @Parcelize
         data class Thread(val threadRootId: ThreadId, val focusedEventId: EventId?) : NavTarget
+
+        @Parcelize
+        data object ThreadsList : NavTarget
     }
 
     private val callback: MessagesEntryPoint.Callback = callback()
@@ -292,6 +296,10 @@ class MessagesFlowNode(
 
                     override fun navigateToThread(threadRootId: ThreadId, focusedEventId: EventId?) {
                         backstack.push(NavTarget.Thread(threadRootId, focusedEventId))
+                    }
+
+                    override fun navigateToThreadsList() {
+                        backstack.push(NavTarget.ThreadsList)
                     }
                 }
                 val inputs = MessagesNode.Inputs(focusedEventId = navTarget.focusedEventId)
@@ -504,6 +512,9 @@ class MessagesFlowNode(
                     }
                 }
                 createNode<ThreadedMessagesNode>(buildContext, listOf(inputs, callback))
+            }
+            NavTarget.ThreadsList -> {
+                createNode<ThreadsListNode>(buildContext)
             }
         }
     }
