@@ -7,6 +7,7 @@
 
 package io.element.android.features.messages.impl.threads.list
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +19,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +59,8 @@ import io.element.android.libraries.matrix.api.timeline.item.event.TextMessageTy
 import io.element.android.libraries.matrix.api.timeline.item.event.getAvatarUrl
 import io.element.android.libraries.matrix.api.timeline.item.event.getDisambiguatedDisplayName
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +81,7 @@ fun ThreadsListView(
                                 id = state.roomId.value,
                                 name = state.roomName,
                                 url = state.roomAvatarUrl,
-                                size = AvatarSize.RoomListItem,
+                                size = AvatarSize.CurrentUserTopBar,
                             ),
                             avatarType = AvatarType.Room(),
                             contentDescription = null,
@@ -101,30 +110,63 @@ fun ThreadsListView(
                 }
             )
         }
-    ) {
+    ) { padding ->
+        val lazyListState = rememberLazyListState()
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = padding,
+            state = lazyListState,
         ) {
-            items(state.threads, key = { it.threadId }) { threadItem ->
+            items(state.threads, key = { it.item.threadId }) { threadItem ->
                 ThreadListItemRow(
                     threadItem = threadItem,
                     onClick = onThreadClick,
                 )
             }
         }
+
+        ScrollHelper(lazyListState) {
+            state.eventSink(ThreadsListEvents.Paginate)
+        }
+    }
+}
+
+@Composable
+private fun ScrollHelper(
+    listState: LazyListState,
+    onPaginate: () -> Unit,
+) {
+    val lastVisibleItemIndex by remember {
+        derivedStateOf { listState.firstVisibleItemIndex + listState.layoutInfo.visibleItemsInfo.size - 1 }
+    }
+    val needsPagination by remember { 
+        derivedStateOf {
+            Timber.d("Last index: $lastVisibleItemIndex | Total: ${listState.layoutInfo.totalItemsCount} | Offset: ${listState.firstVisibleItemScrollOffset}")
+            val canLoadNewItems = listState.isScrollInProgress || listState.firstVisibleItemScrollOffset == 0
+            canLoadNewItems && lastVisibleItemIndex == listState.layoutInfo.totalItemsCount - 1
+        }
+    }
+    LaunchedEffect(needsPagination, lastVisibleItemIndex) {
+        Timber.d("Needs pagination: $needsPagination")
+        if (needsPagination) {
+            onPaginate()
+            delay(400L)
+        }
     }
 }
 
 @Composable
 private fun ThreadListItemRow(
-    threadItem: ThreadListItem,
+    threadItem: ThreadListRowItem,
     onClick: (ThreadId) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .clickable { onClick(threadItem.item.threadId) }
+            .fillMaxWidth()
             .padding(top = 4.dp, bottom = 8.dp, start = 16.dp, end = 16.dp),
     ) {
-        val rootEvent = threadItem.rootEvent
+        val rootEvent = threadItem.item.rootEvent
         val senderProfile = rootEvent.senderProfile
         Avatar(
             avatarData = AvatarData(
@@ -139,28 +181,71 @@ private fun ThreadListItemRow(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = senderProfile.getDisambiguatedDisplayName(rootEvent.senderId),
-                style = ElementTheme.typography.fontBodyLgMedium,
-                color = ElementTheme.colors.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = senderProfile.getDisambiguatedDisplayName(rootEvent.senderId),
+                    style = ElementTheme.typography.fontBodyLgMedium,
+                    color = ElementTheme.colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Text(
+                    text = threadItem.formattedTimestamp,
+                    style = ElementTheme.typography.fontBodySmRegular,
+                    color = ElementTheme.colors.textActionAccent,
+                )
+            }
+
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = (threadItem.latestEvent?.content as? MessageContent)?.body ?: "",
-                style = ElementTheme.typography.fontBodyMdRegular,
-                color = ElementTheme.colors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = threadItem.rootEventText.orEmpty(),
+                    style = ElementTheme.typography.fontBodyMdRegular,
+                    color = ElementTheme.colors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    val hasMentions = true
+                    val hasUnreadNotifications = true
+                    if (hasMentions) {
+                        Icon(
+                            modifier = Modifier.size(14.dp),
+                            imageVector = CompoundIcons.Mention(),
+                            contentDescription = null,
+                            tint = ElementTheme.colors.textActionAccent,
+                        )
+                    }
+
+                    UnreadIndicatorAtom(
+                        size = 14.dp,
+                        isVisible = hasUnreadNotifications,
+                    )
+                }
+            }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "${threadItem.numberOfReplies}",
+                    text = "${threadItem.item.numberOfReplies}",
                     style = ElementTheme.typography.fontBodySmRegular,
                     color = ElementTheme.colors.textSecondary,
                     maxLines = 1,
@@ -178,7 +263,7 @@ private fun ThreadListItemRow(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                threadItem.latestEvent?.let { latestEvent ->
+                threadItem.item.latestEvent?.let { latestEvent ->
                     Avatar(
                         avatarData = AvatarData(
                             id = latestEvent.senderId.value,
@@ -193,47 +278,13 @@ private fun ThreadListItemRow(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = (latestEvent.content as? MessageContent)?.body ?: "",
+                        text = threadItem.latestEventText.orEmpty(),
                         style = ElementTheme.typography.fontBodySmRegular,
                         color = ElementTheme.colors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-        }
-
-        Column(
-            horizontalAlignment = Alignment.End,
-        ) {
-            Text(
-                // TODO: format timestamp
-                text = (threadItem.latestEvent?.timestamp ?: threadItem.rootEvent.timestamp).toString(),
-                style = ElementTheme.typography.fontBodySmRegular,
-                color = ElementTheme.colors.textActionAccent,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(7.dp)
-            ) {
-                val hasMentions = true
-                val hasUnreadNotifications = true
-                if (hasMentions) {
-                    Icon(
-                        modifier = Modifier.size(14.dp),
-                        imageVector = CompoundIcons.Mention(),
-                        contentDescription = null,
-                        tint = ElementTheme.colors.textActionAccent,
-                    )
-                }
-
-                UnreadIndicatorAtom(
-                    size = 14.dp,
-                    isVisible = hasUnreadNotifications,
-                )
             }
         }
     }
@@ -248,7 +299,7 @@ internal fun ThreadsListViewPreview() {
                 roomId = RoomId("!room-id:server"),
                 roomName = "Room name",
                 roomAvatarUrl = null,
-                threads = List(10) { aThreadListItem(threadId = ThreadId("thread-$it")) }.toImmutableList(),
+                threads = List(10) { aThreadListRowItem(threadId = ThreadId("thread-$it")) }.toImmutableList(),
                 eventSink = {},
             ),
             onThreadClick = {},
@@ -262,11 +313,31 @@ internal fun ThreadsListViewPreview() {
 internal fun ThreadListItemRowPreview() {
     ElementPreview {
         ThreadListItemRow(
-            threadItem = aThreadListItem(),
+            threadItem = aThreadListRowItem(),
             onClick = {},
         )
     }
 }
+
+fun aThreadListRowItem(
+    threadId: ThreadId = ThreadId("\$a-thread-id"),
+    rootEvent: ThreadListItemEvent = aThreadListItemEvent(threadId = threadId),
+    latestEvent: ThreadListItemEvent? = aThreadListItemEvent(threadId = threadId),
+    numberOfReplies: Long = 42,
+    rootEventText: String? = "Hello world!",
+    latestEventText: String? = "Hello again!",
+    formattedTimestamp: String = "12:34",
+) = ThreadListRowItem(
+    item = aThreadListItem(
+        threadId = threadId,
+        rootEvent = rootEvent,
+        latestEvent = latestEvent,
+        numberOfReplies = numberOfReplies,
+    ),
+    rootEventText = rootEventText,
+    latestEventText = latestEventText,
+    formattedTimestamp = formattedTimestamp,
+)
 
 fun aThreadListItem(
     threadId: ThreadId = ThreadId("\$a-thread-id"),

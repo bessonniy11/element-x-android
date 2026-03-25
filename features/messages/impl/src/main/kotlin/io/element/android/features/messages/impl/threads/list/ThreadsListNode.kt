@@ -15,7 +15,9 @@ import com.bumble.appyx.core.plugin.Plugin
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.di.RoomScope
+import io.element.android.libraries.matrix.api.core.ThreadId
 
 @ContributesNode(RoomScope::class)
 @AssistedInject
@@ -24,12 +26,18 @@ class ThreadsListNode(
     @Assisted plugins: List<Plugin>,
     private val presenter: ThreadsListPresenter,
 ) : Node(buildContext, plugins = plugins) {
+    interface Callback : Plugin {
+        fun openThread(threadId: ThreadId)
+    }
+
+    private val callback: Callback = callback()
+
     @Composable
     override fun View(modifier: Modifier) {
         ThreadsListView(
             state = presenter.present(),
             modifier = modifier,
-            onThreadClick = { TODO() },
+            onThreadClick = callback::openThread,
             onBackClick = this::navigateUp,
         )
     }

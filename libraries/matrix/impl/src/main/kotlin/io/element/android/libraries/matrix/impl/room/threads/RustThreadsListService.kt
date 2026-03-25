@@ -14,6 +14,7 @@ import io.element.android.libraries.matrix.api.room.threads.ThreadListItem
 import io.element.android.libraries.matrix.api.room.threads.ThreadListItemEvent
 import io.element.android.libraries.matrix.api.room.threads.ThreadListPaginationStatus
 import io.element.android.libraries.matrix.api.room.threads.ThreadsListService
+import io.element.android.libraries.matrix.impl.timeline.item.event.EventMessageMapper
 import io.element.android.libraries.matrix.impl.timeline.item.event.TimelineEventContentMapper
 import io.element.android.libraries.matrix.impl.timeline.item.event.map
 import io.element.android.libraries.matrix.impl.util.cancelAndDestroy
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import org.matrix.rustcomponents.sdk.ThreadListEntriesListener
 import org.matrix.rustcomponents.sdk.ThreadListPaginationStateListener
 import org.matrix.rustcomponents.sdk.ThreadListUpdate
@@ -35,8 +37,8 @@ import org.matrix.rustcomponents.sdk.ThreadListService as InnerThreadListService
 
 class RustThreadsListService(
     private val inner: InnerThreadListService,
-    private val contentMapper: TimelineEventContentMapper,
     private val roomCoroutineScope: CoroutineScope,
+    private val contentMapper: TimelineEventContentMapper = TimelineEventContentMapper(),
 ) : ThreadsListService {
     private var itemSubscriptionJob: Job? = null
 
@@ -63,9 +65,11 @@ class RustThreadsListService(
             }
         }
 
-        return updatesFlow.onEach { diff ->
-            items.value = diff.apply(items.value, contentMapper)
-        }
+        return updatesFlow
+            .onStart { items.value = inner.items().map { it.map(contentMapper) } }
+            .onEach { diff ->
+                items.value = diff.apply(items.value, contentMapper)
+            }
             .launchIn(roomCoroutineScope)
     }
 

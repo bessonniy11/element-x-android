@@ -514,7 +514,12 @@ class MessagesFlowNode(
                 createNode<ThreadedMessagesNode>(buildContext, listOf(inputs, callback))
             }
             NavTarget.ThreadsList -> {
-                createNode<ThreadsListNode>(buildContext)
+                val callback = object : ThreadsListNode.Callback {
+                    override fun openThread(threadId: ThreadId) {
+                        backstack.push(NavTarget.Thread(threadId, focusedEventId = null))
+                    }
+                }
+                createNode<ThreadsListNode>(buildContext, listOf(callback))
             }
         }
     }
