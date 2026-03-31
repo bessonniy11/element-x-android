@@ -200,6 +200,7 @@ class DefaultElementClassicConnectionTest {
                         userId = A_USER_ID,
                         homeserverUrl = null,
                         secrets = null,
+                        doesContainBackupKey = null,
                     ),
                     displayName = null,
                     avatar = null,
@@ -209,13 +210,29 @@ class DefaultElementClassicConnectionTest {
     }
 
     @Test
-    fun `when session is received with all data, and homeserver is supported, ElementClassicReady is emitted`() = runTest {
+    fun `when session is received with all data including key backup, and homeserver is supported, ElementClassicReady is emitted`() {
+        `when session is received with all data, and homeserver is supported, ElementClassicReady is emitted`(
+            withKeyBackup = true,
+        )
+    }
+
+    @Test
+    fun `when session is received with all data without key backup, and homeserver is supported, ElementClassicReady is emitted - backup key is missing`() {
+        `when session is received with all data, and homeserver is supported, ElementClassicReady is emitted`(
+            withKeyBackup = false,
+        )
+    }
+
+    private fun `when session is received with all data, and homeserver is supported, ElementClassicReady is emitted`(
+        withKeyBackup: Boolean,
+    ) = runTest {
         val connection = createDefaultElementClassicConnection(
             homeServerLoginCompatibilityChecker = FakeHomeServerLoginCompatibilityChecker(
                 checkResult = { Result.success(true) }
             ),
             matrixAuthenticationService = FakeMatrixAuthenticationService(
                 setElementClassicSessionResult = {},
+                doSecretsContainBackupKeyResult = { _, _ -> withKeyBackup },
             ),
         )
         connection.stateFlow.test {
@@ -235,11 +252,15 @@ class DefaultElementClassicConnectionTest {
                         userId = A_USER_ID,
                         homeserverUrl = A_HOMESERVER_URL,
                         secrets = A_SECRET,
+                        doesContainBackupKey = withKeyBackup,
                     ),
                     displayName = A_USER_NAME,
                     avatar = null,
                 )
             )
+            // Test the reset method
+            connection.reset()
+            assertThat(awaitItem()).isEqualTo(ElementClassicConnectionState.Idle)
         }
     }
 
@@ -270,6 +291,7 @@ class DefaultElementClassicConnectionTest {
                         userId = A_USER_ID,
                         homeserverUrl = null,
                         secrets = null,
+                        doesContainBackupKey = null,
                     ),
                     displayName = null,
                     avatar = null,
@@ -324,6 +346,7 @@ class DefaultElementClassicConnectionTest {
                         userId = A_USER_ID,
                         homeserverUrl = null,
                         secrets = null,
+                        doesContainBackupKey = null,
                     ),
                     displayName = null,
                     avatar = null,
@@ -363,6 +386,7 @@ class DefaultElementClassicConnectionTest {
                         userId = A_USER_ID,
                         homeserverUrl = null,
                         secrets = null,
+                        doesContainBackupKey = null,
                     ),
                     displayName = null,
                     avatar = null,

@@ -13,4 +13,5 @@ data class ElementClassicSession(
     val userId: UserId,
     val homeserverUrl: String?,
     val secrets: String?,
+    val doesContainBackupKey: Boolean?,
 )

@@ -123,6 +123,46 @@ class LoginWithClassicPresenterTest {
     }
 
     @Test
+    fun `present - start login with correct state without key backup`() = runTest {
+        val authenticationService = FakeMatrixAuthenticationService(
+            setHomeserverResult = {
+                Result.failure(AN_EXCEPTION)
+            },
+        )
+        val elementClassicConnection = FakeElementClassicConnection(
+            startResult = {},
+        )
+        val navigateToMissingKeyBackupResult = lambdaRecorder<Unit> { }
+        val presenter = createPresenter(
+            elementClassicConnection = elementClassicConnection,
+            loginHelper = createLoginHelper(
+                authenticationService = authenticationService,
+            ),
+            navigator = FakeLoginWithClassicNavigator(
+                navigateToMissingKeyBackupResult = navigateToMissingKeyBackupResult,
+            ),
+        )
+        presenter.test {
+            skipItems(1)
+            elementClassicConnection.emitState(
+                anElementClassicReady(
+                    elementClassicSession = anElementClassicSession(
+                        userId = A_USER_ID,
+                        secrets = A_SECRET,
+                        doesContainBackupKey = false,
+                    ),
+                    displayName = A_USER_NAME,
+                )
+            )
+            val readyState = awaitItem()
+            assertThat(readyState.userId).isEqualTo(A_USER_ID)
+            assertThat(readyState.displayName).isEqualTo(A_USER_NAME)
+            readyState.eventSink(LoginWithClassicEvent.Submit)
+            navigateToMissingKeyBackupResult.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
     fun `present - submit in wrong state and clear error`() = runTest {
         val elementClassicConnection = FakeElementClassicConnection(
             startResult = {},
@@ -150,17 +190,19 @@ class LoginWithClassicPresenterTest {
 }
 
 private fun createPresenter(
-    isEnterpriseBuild: Boolean = false,
     userId: UserId = A_USER_ID,
+    navigator: LoginWithClassicNavigator = FakeLoginWithClassicNavigator(),
     loginHelper: LoginHelper = createLoginHelper(),
     elementClassicConnection: ElementClassicConnection = FakeElementClassicConnection(),
     accountProviderDataSource: AccountProviderDataSource = AccountProviderDataSource(FakeEnterpriseService()),
+    isEnterpriseBuild: Boolean = false,
 ) = LoginWithClassicPresenter(
-    buildMeta = aBuildMeta(
-        isEnterpriseBuild = isEnterpriseBuild,
-    ),
     userId = userId,
+    navigator = navigator,
     loginHelper = loginHelper,
     elementClassicConnection = elementClassicConnection,
     accountProviderDataSource = accountProviderDataSource,
+    buildMeta = aBuildMeta(
+        isEnterpriseBuild = isEnterpriseBuild,
+    ),
 )

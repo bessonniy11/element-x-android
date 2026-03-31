@@ -71,10 +71,6 @@ fun LoginWithClassicView(
         state.eventSink(LoginWithClassicEvent.RefreshData)
     }
 
-    fun submit() {
-        state.eventSink(LoginWithClassicEvent.Submit)
-    }
-
     val isLoading by remember(state.loginMode) {
         derivedStateOf {
             state.loginMode is AsyncData.Loading
@@ -171,7 +167,9 @@ fun LoginWithClassicView(
                     Button(
                         text = stringResource(CommonStrings.action_continue),
                         showProgress = isLoading,
-                        onClick = ::submit,
+                        onClick = {
+                            state.eventSink(LoginWithClassicEvent.Submit)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag(TestTags.loginContinue)

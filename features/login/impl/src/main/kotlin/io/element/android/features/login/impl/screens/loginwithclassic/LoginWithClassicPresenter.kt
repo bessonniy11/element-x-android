@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 @AssistedInject
 class LoginWithClassicPresenter(
     @Assisted private val userId: UserId,
+    @Assisted private val navigator: LoginWithClassicNavigator,
     private val loginHelper: LoginHelper,
     private val elementClassicConnection: ElementClassicConnection,
     private val accountProviderDataSource: AccountProviderDataSource,
@@ -40,6 +41,7 @@ class LoginWithClassicPresenter(
     interface Factory {
         fun create(
             userId: UserId,
+            navigator: LoginWithClassicNavigator,
         ): LoginWithClassicPresenter
     }
 
@@ -58,20 +60,26 @@ class LoginWithClassicPresenter(
                     // Request the avatar
                     elementClassicConnection.requestAvatar(userId)
                 }
-                LoginWithClassicEvent.Submit -> coroutineScope.launch {
-                    loginWithClassicAction = AsyncAction.Loading
+                LoginWithClassicEvent.Submit -> {
                     val currentState = elementClassicConnection.stateFlow.value
                     if (currentState is ElementClassicConnectionState.ElementClassicReady) {
-                        // Ensure that the current account provider is set
-                        val elementClassicUserId = currentState.elementClassicSession.userId
-                        val accountProvider = elementClassicUserId.domainName.orEmpty().ensureProtocol()
-                        accountProviderDataSource.setUrl(accountProvider)
-                        loginHelper.submit(
-                            isAccountCreation = false,
-                            homeserverUrl = accountProvider,
-                            resolvedHomeserverUrl = currentState.elementClassicSession.homeserverUrl,
-                            loginHint = "mxid:" + elementClassicUserId.value,
-                        )
+                        if (currentState.elementClassicSession.doesContainBackupKey == false) {
+                            navigator.navigateToMissingKeyBackup()
+                        } else {
+                            coroutineScope.launch {
+                                loginWithClassicAction = AsyncAction.Loading
+                                // Ensure that the current account provider is set
+                                val elementClassicUserId = currentState.elementClassicSession.userId
+                                val accountProvider = elementClassicUserId.domainName.orEmpty().ensureProtocol()
+                                accountProviderDataSource.setUrl(accountProvider)
+                                loginHelper.submit(
+                                    isAccountCreation = false,
+                                    homeserverUrl = accountProvider,
+                                    resolvedHomeserverUrl = currentState.elementClassicSession.homeserverUrl,
+                                    loginHint = "mxid:" + elementClassicUserId.value,
+                                )
+                            }
+                        }
                     } else {
                         loginWithClassicAction = AsyncAction.Failure(IllegalStateException("Element Classic is not ready"))
                     }
@@ -83,11 +91,12 @@ class LoginWithClassicPresenter(
             }
         }
 
+        val elementClassicReady = elementClassicConnectionState as? ElementClassicConnectionState.ElementClassicReady
         return LoginWithClassicState(
             isElementPro = buildMeta.isEnterpriseBuild,
             userId = userId,
-            displayName = (elementClassicConnectionState as? ElementClassicConnectionState.ElementClassicReady)?.displayName,
-            avatar = (elementClassicConnectionState as? ElementClassicConnectionState.ElementClassicReady)?.avatar,
+            displayName = elementClassicReady?.displayName,
+            avatar = elementClassicReady?.avatar,
             loginMode = loginMode,
             loginWithClassicAction = loginWithClassicAction,
             eventSink = ::handleEvent,

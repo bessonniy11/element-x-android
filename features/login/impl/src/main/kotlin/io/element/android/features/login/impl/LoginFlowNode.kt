@@ -20,6 +20,7 @@ import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.core.node.Node
 import com.bumble.appyx.core.plugin.Plugin
 import com.bumble.appyx.navmodel.backstack.BackStack
+import com.bumble.appyx.navmodel.backstack.operation.newRoot
 import com.bumble.appyx.navmodel.backstack.operation.pop
 import com.bumble.appyx.navmodel.backstack.operation.push
 import com.bumble.appyx.navmodel.backstack.operation.replace
@@ -40,6 +41,7 @@ import io.element.android.features.login.impl.screens.confirmaccountprovider.Con
 import io.element.android.features.login.impl.screens.createaccount.CreateAccountNode
 import io.element.android.features.login.impl.screens.loginpassword.LoginPasswordNode
 import io.element.android.features.login.impl.screens.loginwithclassic.LoginWithClassicNode
+import io.element.android.features.login.impl.screens.missingkeybackup.MissingKeyBackupNode
 import io.element.android.features.login.impl.screens.onboarding.OnBoardingNode
 import io.element.android.features.login.impl.screens.searchaccountprovider.SearchAccountProviderNode
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
@@ -123,6 +125,9 @@ class LoginFlowNode(
         data class Classic(
             val userId: UserId,
         ) : NavTarget
+
+        @Parcelize
+        data object MissingKeyBackup : NavTarget
 
         @Parcelize
         data class ConfirmAccountProvider(
@@ -283,11 +288,28 @@ class LoginFlowNode(
                     override fun navigateToCreateAccount(url: String) {
                         backstack.push(NavTarget.CreateAccount(url))
                     }
+
+                    override fun navigateToMissingKeyBackup() {
+                        backstack.push(NavTarget.MissingKeyBackup)
+                    }
                 }
                 val inputs = LoginWithClassicNode.Inputs(
                     userId = navTarget.userId,
                 )
                 createNode<LoginWithClassicNode>(buildContext, plugins = listOf(inputs, callback))
+            }
+            NavTarget.MissingKeyBackup -> {
+                val callback = object : MissingKeyBackupNode.Callback {
+                    override fun navigateBack() {
+                        backstack.pop()
+                    }
+
+                    override fun startOver() {
+                        // Start over by checking again Element Classic
+                        backstack.newRoot(NavTarget.CheckClassic)
+                    }
+                }
+                createNode<MissingKeyBackupNode>(buildContext, listOf(callback))
             }
             NavTarget.ChangeAccountProvider -> {
                 val callback = object : ChangeAccountProviderNode.Callback {

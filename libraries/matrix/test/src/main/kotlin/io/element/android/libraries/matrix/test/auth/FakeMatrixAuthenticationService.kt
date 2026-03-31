@@ -18,6 +18,7 @@ import io.element.android.libraries.matrix.api.auth.external.ExternalSession
 import io.element.android.libraries.matrix.api.auth.qrlogin.MatrixQrCodeLoginData
 import io.element.android.libraries.matrix.api.auth.qrlogin.QrCodeLoginStep
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
@@ -34,6 +35,7 @@ class FakeMatrixAuthenticationService(
     private val importCreatedSessionLambda: (ExternalSession) -> Result<SessionId> = { lambdaError() },
     private val setHomeserverResult: (String) -> Result<MatrixHomeServerDetails> = { lambdaError() },
     private val setElementClassicSessionResult: (ElementClassicSession?) -> Unit = { lambdaError() },
+    private val doSecretsContainBackupKeyResult: (UserId, String?) -> Boolean? = { _, _ -> lambdaError() },
 ) : MatrixAuthenticationService {
     private var oidcError: Throwable? = null
     private var oidcCancelError: Throwable? = null
@@ -113,5 +115,9 @@ class FakeMatrixAuthenticationService(
 
     override fun setElementClassicSession(session: ElementClassicSession?) {
         setElementClassicSessionResult(session)
+    }
+
+    override fun doSecretsContainBackupKey(userId: UserId, secrets: String): Boolean? {
+        return doSecretsContainBackupKeyResult(userId, secrets)
     }
 }

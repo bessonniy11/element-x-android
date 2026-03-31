@@ -26,6 +26,7 @@ import io.element.android.libraries.matrix.api.auth.external.ExternalSession
 import io.element.android.libraries.matrix.api.auth.qrlogin.MatrixQrCodeLoginData
 import io.element.android.libraries.matrix.api.auth.qrlogin.QrCodeLoginStep
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import io.element.android.libraries.matrix.impl.ClientBuilderSlidingSync
 import io.element.android.libraries.matrix.impl.RustMatrixClientFactory
@@ -185,14 +186,29 @@ class RustMatrixAuthenticationService(
                     else -> {
                         Timber.d("Trying to import secrets for Element Classic session ${it.userId}")
                         runCatchingExceptions {
-                            val secretsBundle = SecretsBundleWithUserId.fromStr(it.userId.value, secrets)
-                            client.encryption().importSecretsBundle(secretsBundle)
+                            SecretsBundleWithUserId.fromStr(it.userId.value, secrets).use { secretsBundle ->
+                                client.encryption().importSecretsBundle(secretsBundle)
+                            }
                         }.onFailure { failure ->
                             Timber.e(failure, "Failed to import secrets for Element Classic session ${it.userId}")
                         }
                     }
                 }
             }
+    }
+
+    override fun doSecretsContainBackupKey(
+        userId: UserId,
+        secrets: String,
+    ): Boolean? {
+        return try {
+            SecretsBundleWithUserId.fromStr(userId.value, secrets).use { secretsBundle ->
+                secretsBundle.containsBackupKey()
+            }
+        } catch (failure: Exception) {
+            Timber.e(failure, "Failed to parse secrets for Element Classic session $userId")
+            null
+        }
     }
 
     override suspend fun importCreatedSession(externalSession: ExternalSession): Result<SessionId> =

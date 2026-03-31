@@ -30,12 +30,14 @@ class LoginWithClassicNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
     presenterFactory: LoginWithClassicPresenter.Factory,
-) : Node(buildContext, plugins = plugins) {
+) : Node(buildContext, plugins = plugins),
+    LoginWithClassicNavigator {
     interface Callback : Plugin {
         fun navigateToOtherOptions()
         fun navigateToLoginPassword()
         fun navigateToOidc(oidcDetails: OidcDetails)
         fun navigateToCreateAccount(url: String)
+        fun navigateToMissingKeyBackup()
     }
 
     data class Inputs(
@@ -43,8 +45,12 @@ class LoginWithClassicNode(
     ) : NodeInputs
 
     private val inputs: Inputs = inputs()
-    val presenter = presenterFactory.create(inputs.userId)
+    val presenter = presenterFactory.create(inputs.userId, this)
     private val callback: Callback = callback()
+
+    override fun navigateToMissingKeyBackup() {
+        callback.navigateToMissingKeyBackup()
+    }
 
     @Composable
     override fun View(modifier: Modifier) {

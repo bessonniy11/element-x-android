@@ -44,6 +44,7 @@ interface ElementClassicConnection {
     fun stop()
     fun requestSession()
     fun requestAvatar(userId: UserId)
+    fun reset()
     val stateFlow: StateFlow<ElementClassicConnectionState>
 }
 
@@ -136,6 +137,12 @@ class DefaultElementClassicConnection(
             serviceBinder.unbindService(serviceConnection)
             bound = false
         }
+        coroutineScope.launch {
+            emitState(ElementClassicConnectionState.Idle)
+        }
+    }
+
+    override fun reset() {
         coroutineScope.launch {
             emitState(ElementClassicConnectionState.Idle)
         }
@@ -322,11 +329,15 @@ class DefaultElementClassicConnection(
                 val secrets = getString(KEY_SECRETS_STR)?.takeIf { it.isNotEmpty() }
                 val homeserverUrl = getString(KEY_HOMESERVER_URL_STR)?.takeIf { it.isNotEmpty() }
                 val displayName = getString(KEY_USER_DISPLAY_NAME_STR)?.takeIf { it.isNotEmpty() }
+                val doesContainBackupKey = secrets?.let {
+                    matrixAuthenticationService.doSecretsContainBackupKey(userId, it)
+                }
                 ElementClassicConnectionState.ElementClassicReady(
                     elementClassicSession = ElementClassicSession(
                         userId = userId,
                         homeserverUrl = homeserverUrl,
                         secrets = secrets,
+                        doesContainBackupKey = doesContainBackupKey,
                     ),
                     displayName = displayName,
                     avatar = null,
