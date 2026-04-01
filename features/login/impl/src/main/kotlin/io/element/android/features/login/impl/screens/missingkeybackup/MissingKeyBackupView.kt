@@ -45,7 +45,7 @@ fun MissingKeyBackupView(
         onBackClick = onBackClick,
         iconStyle = BigIcon.Style.Default(CompoundIcons.KeySolid()),
         title = stringResource(id = R.string.screen_missing_key_backup_title, state.appName),
-        content = { Content() },
+        content = { Content(state) },
         buttons = {
             Buttons(
                 onOpenClassicClick = onOpenClassicClick,
@@ -55,7 +55,9 @@ fun MissingKeyBackupView(
 }
 
 @Composable
-private fun Content() {
+private fun Content(
+    state: MissingKeyBackupState,
+) {
     NumberedListOrganism(
         modifier = Modifier.padding(top = 50.dp, start = 20.dp, end = 20.dp),
         items = persistentListOf(
@@ -63,7 +65,7 @@ private fun Content() {
             AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_2)),
             AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_3)),
             AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_4)),
-            AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_5)),
+            AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_5, state.appName)),
         ),
     )
 }
