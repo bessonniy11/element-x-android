@@ -16,16 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 class FakeElementClassicConnection(
     private val startResult: () -> Unit = { lambdaError() },
     private val stopResult: () -> Unit = { lambdaError() },
-    private val requestVerifiedUserIdResult: () -> Unit = { lambdaError() },
-    private val requestProfileResult: (UserId) -> Unit = { lambdaError() },
-    private val resetResult: () -> Unit = { lambdaError() },
+    private val requestSessionResult: () -> Unit = { lambdaError() },
+    private val requestAvatarResult: (UserId) -> Unit = { lambdaError() },
     initialState: ElementClassicConnectionState = ElementClassicConnectionState.Idle
 ) : ElementClassicConnection {
     override fun start() = startResult()
     override fun stop() = stopResult()
-    override fun requestSession() = requestVerifiedUserIdResult()
-    override fun requestAvatar(userId: UserId) = requestProfileResult(userId)
-    override fun reset() = resetResult()
+    override fun requestSession() = requestSessionResult()
+    override fun requestAvatar(userId: UserId) = requestAvatarResult(userId)
     private val mutableStateFlow = MutableStateFlow(initialState)
     override val stateFlow: StateFlow<ElementClassicConnectionState> = mutableStateFlow.asStateFlow()
     suspend fun emitState(state: ElementClassicConnectionState) {

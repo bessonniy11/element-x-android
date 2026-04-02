@@ -258,9 +258,6 @@ class DefaultElementClassicConnectionTest {
                     avatar = null,
                 )
             )
-            // Test the reset method
-            connection.reset()
-            assertThat(awaitItem()).isEqualTo(ElementClassicConnectionState.Idle)
         }
     }
 

@@ -57,8 +57,11 @@ class LoginWithClassicPresenter(
         fun handleEvent(event: LoginWithClassicEvent) {
             when (event) {
                 LoginWithClassicEvent.RefreshData -> {
-                    // Request the avatar
-                    elementClassicConnection.requestAvatar(userId)
+                    // Request the avatar if not known yet
+                    val currentState = elementClassicConnection.stateFlow.value
+                    if ((currentState as? ElementClassicConnectionState.ElementClassicReady)?.avatar == null) {
+                        elementClassicConnection.requestAvatar(userId)
+                    }
                 }
                 LoginWithClassicEvent.Submit -> {
                     val currentState = elementClassicConnection.stateFlow.value

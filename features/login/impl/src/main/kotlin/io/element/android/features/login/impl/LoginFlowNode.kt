@@ -20,7 +20,6 @@ import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.core.node.Node
 import com.bumble.appyx.core.plugin.Plugin
 import com.bumble.appyx.navmodel.backstack.BackStack
-import com.bumble.appyx.navmodel.backstack.operation.newRoot
 import com.bumble.appyx.navmodel.backstack.operation.pop
 import com.bumble.appyx.navmodel.backstack.operation.push
 import com.bumble.appyx.navmodel.backstack.operation.replace
@@ -36,9 +35,7 @@ import io.element.android.features.login.impl.classic.ElementClassicConnection
 import io.element.android.features.login.impl.qrcode.QrCodeLoginFlowNode
 import io.element.android.features.login.impl.screens.changeaccountprovider.ChangeAccountProviderNode
 import io.element.android.features.login.impl.screens.chooseaccountprovider.ChooseAccountProviderNode
-import io.element.android.features.login.impl.screens.classic.checkclassic.CheckClassicNode
-import io.element.android.features.login.impl.screens.classic.loginwithclassic.LoginWithClassicNode
-import io.element.android.features.login.impl.screens.classic.missingkeybackup.MissingKeyBackupNode
+import io.element.android.features.login.impl.screens.classic.ClassicFlowNode
 import io.element.android.features.login.impl.screens.confirmaccountprovider.ConfirmAccountProviderNode
 import io.element.android.features.login.impl.screens.createaccount.CreateAccountNode
 import io.element.android.features.login.impl.screens.loginpassword.LoginPasswordNode
@@ -53,7 +50,6 @@ import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.architecture.inputs
 import io.element.android.libraries.di.annotations.AppCoroutineScope
 import io.element.android.libraries.matrix.api.auth.OidcDetails
-import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.oidc.api.OidcAction
 import io.element.android.libraries.oidc.api.OidcActionFlow
 import kotlinx.coroutines.CoroutineScope
@@ -73,7 +69,7 @@ class LoginFlowNode(
     private val elementClassicConnection: ElementClassicConnection,
 ) : BaseFlowNode<LoginFlowNode.NavTarget>(
     backstack = BackStack(
-        initialElement = NavTarget.CheckClassic,
+        initialElement = NavTarget.CheckClassicFlow,
         savedStateMap = buildContext.savedStateMap,
     ),
     buildContext = buildContext,
@@ -111,7 +107,7 @@ class LoginFlowNode(
 
     sealed interface NavTarget : Parcelable {
         @Parcelize
-        data object CheckClassic : NavTarget
+        data object CheckClassicFlow : NavTarget
 
         @Parcelize
         data class OnBoarding(
@@ -120,14 +116,6 @@ class LoginFlowNode(
 
         @Parcelize
         data object QrCode : NavTarget
-
-        @Parcelize
-        data class Classic(
-            val userId: UserId,
-        ) : NavTarget
-
-        @Parcelize
-        data object MissingKeyBackup : NavTarget
 
         @Parcelize
         data class ConfirmAccountProvider(
@@ -154,17 +142,29 @@ class LoginFlowNode(
 
     override fun resolve(navTarget: NavTarget, buildContext: BuildContext): Node {
         return when (navTarget) {
-            NavTarget.CheckClassic -> {
-                val callback = object : CheckClassicNode.Callback {
-                    override fun navigateToClassic(userId: UserId) {
-                        backstack.replace(NavTarget.Classic(userId))
+            NavTarget.CheckClassicFlow -> {
+                val callback = object : ClassicFlowNode.Callback {
+                    override fun navigateToOnBoarding(allowBackNavigation: Boolean) {
+                        if (allowBackNavigation) {
+                            backstack.push(NavTarget.OnBoarding(showBackButton = true))
+                        } else {
+                            backstack.replace(NavTarget.OnBoarding(showBackButton = false))
+                        }
                     }
 
-                    override fun navigateToOnBoarding() {
-                        backstack.replace(NavTarget.OnBoarding(showBackButton = false))
+                    override fun navigateToLoginPassword() {
+                        backstack.push(NavTarget.LoginPassword())
+                    }
+
+                    override fun navigateToOidc(oidcDetails: OidcDetails) {
+                        navigateToMas(oidcDetails)
+                    }
+
+                    override fun navigateToCreateAccount(url: String) {
+                        backstack.push(NavTarget.CreateAccount(url))
                     }
                 }
-                createNode<CheckClassicNode>(buildContext, listOf(callback))
+                createNode<ClassicFlowNode>(buildContext, listOf(callback))
             }
             is NavTarget.OnBoarding -> {
                 val callback = object : OnBoardingNode.Callback {
@@ -266,50 +266,6 @@ class LoginFlowNode(
                     }
                 }
                 createNode<ConfirmAccountProviderNode>(buildContext, plugins = listOf(inputs, callback))
-            }
-            is NavTarget.Classic -> {
-                val callback = object : LoginWithClassicNode.Callback {
-                    override fun navigateToOtherOptions() {
-                        backstack.push(NavTarget.OnBoarding(showBackButton = true))
-                    }
-
-                    override fun navigateToLoginPassword() {
-                        backstack.push(
-                            NavTarget.LoginPassword(
-                                initialLogin = navTarget.userId.extractedDisplayName,
-                            )
-                        )
-                    }
-
-                    override fun navigateToOidc(oidcDetails: OidcDetails) {
-                        navigateToMas(oidcDetails)
-                    }
-
-                    override fun navigateToCreateAccount(url: String) {
-                        backstack.push(NavTarget.CreateAccount(url))
-                    }
-
-                    override fun navigateToMissingKeyBackup() {
-                        backstack.push(NavTarget.MissingKeyBackup)
-                    }
-                }
-                val inputs = LoginWithClassicNode.Inputs(
-                    userId = navTarget.userId,
-                )
-                createNode<LoginWithClassicNode>(buildContext, plugins = listOf(inputs, callback))
-            }
-            NavTarget.MissingKeyBackup -> {
-                val callback = object : MissingKeyBackupNode.Callback {
-                    override fun navigateBack() {
-                        backstack.pop()
-                    }
-
-                    override fun startOver() {
-                        // Start over by checking again Element Classic
-                        backstack.newRoot(NavTarget.CheckClassic)
-                    }
-                }
-                createNode<MissingKeyBackupNode>(buildContext, listOf(callback))
             }
             NavTarget.ChangeAccountProvider -> {
                 val callback = object : ChangeAccountProviderNode.Callback {

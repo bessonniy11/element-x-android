@@ -29,20 +29,13 @@ import timber.log.Timber
 class MissingKeyBackupNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
-    presenterFactory: MissingKeyBackupPresenter.Factory,
-) : Node(buildContext, plugins = plugins),
-    MissingKeyBackupNavigator {
+    private val presenter: MissingKeyBackupPresenter,
+) : Node(buildContext, plugins = plugins) {
     interface Callback : Plugin {
         fun navigateBack()
-        fun startOver()
     }
 
     private val callback: Callback = callback()
-    private val presenter = presenterFactory.create(this)
-
-    override fun startOver() {
-        callback.startOver()
-    }
 
     /**
      * Open Element Classic application

@@ -30,14 +30,10 @@ class MissingKeyBackupPresenterTest {
 
     @Test
     fun `present - when the screen is resumed twice, the start over method is called`() = runTest {
-        val resetResult = lambdaRecorder<Unit> { }
-        val startOverResult = lambdaRecorder<Unit> { }
+        val requestSessionResult = lambdaRecorder<Unit> { }
         val presenter = createPresenter(
             elementClassicConnection = FakeElementClassicConnection(
-                resetResult = resetResult,
-            ),
-            navigator = FakeMissingKeyBackupNavigator(
-                startOverResult = startOverResult,
+                requestSessionResult = requestSessionResult,
             ),
         )
         presenter.test {
@@ -45,18 +41,15 @@ class MissingKeyBackupPresenterTest {
             initialState.eventSink(MissingKeyBackupEvent.OnResume)
             expectNoEvents()
             initialState.eventSink(MissingKeyBackupEvent.OnResume)
-            resetResult.assertions().isCalledOnce()
-            startOverResult.assertions().isCalledOnce()
+            requestSessionResult.assertions().isCalledOnce()
         }
     }
 }
 
 private fun createPresenter(
-    navigator: MissingKeyBackupNavigator = FakeMissingKeyBackupNavigator(),
     buildMeta: BuildMeta = aBuildMeta(applicationName = AN_APPLICATION_NAME),
     elementClassicConnection: ElementClassicConnection = FakeElementClassicConnection(),
 ) = MissingKeyBackupPresenter(
-    navigator = navigator,
     buildMeta = buildMeta,
     elementClassicConnection = elementClassicConnection,
 )

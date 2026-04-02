@@ -61,7 +61,7 @@ class LoginWithClassicPresenterTest {
         val requestAvatarResult = lambdaRecorder<UserId, Unit> { }
         val elementClassicConnection = FakeElementClassicConnection(
             startResult = {},
-            requestProfileResult = requestAvatarResult,
+            requestAvatarResult = requestAvatarResult,
         )
         val presenter = createPresenter(
             elementClassicConnection = elementClassicConnection,

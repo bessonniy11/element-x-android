@@ -186,7 +186,12 @@ class RustMatrixAuthenticationService(
                     else -> {
                         Timber.d("Trying to import secrets for Element Classic session ${it.userId}")
                         runCatchingExceptions {
-                            SecretsBundleWithUserId.fromStr(it.userId.value, secrets).use { secretsBundle ->
+                            SecretsBundleWithUserId.fromStr(
+                                userId = it.userId.value,
+                                bundle = secrets,
+                                // TODO
+                                backupInfo = "",
+                            ).use { secretsBundle ->
                                 client.encryption().importSecretsBundle(secretsBundle)
                             }
                         }.onFailure { failure ->
@@ -202,7 +207,12 @@ class RustMatrixAuthenticationService(
         secrets: String,
     ): Boolean? {
         return try {
-            SecretsBundleWithUserId.fromStr(userId.value, secrets).use { secretsBundle ->
+            SecretsBundleWithUserId.fromStr(
+                userId = userId.value,
+                bundle = secrets,
+                // TODO
+                backupInfo = "",
+            ).use { secretsBundle ->
                 secretsBundle.containsBackupKey()
             }
         } catch (failure: Exception) {

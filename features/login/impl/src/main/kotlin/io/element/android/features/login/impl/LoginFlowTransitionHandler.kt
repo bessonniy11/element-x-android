@@ -34,7 +34,7 @@ class LoginFlowTransitionHandler(
         descriptor: TransitionDescriptor<LoginFlowNode.NavTarget, BackStack.State>
     ): Modifier {
         val isCheckClassicBeingRemoved = backstack.elements.value.any { element ->
-            element.key.navTarget == LoginFlowNode.NavTarget.CheckClassic &&
+            element.key.navTarget == LoginFlowNode.NavTarget.CheckClassicFlow &&
                 element.targetState != BackStack.State.ACTIVE
         }
         val handler = if (isCheckClassicBeingRemoved) fader else slider

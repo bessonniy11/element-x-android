@@ -12,27 +12,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import dev.zacsweers.metro.Assisted
-import dev.zacsweers.metro.AssistedFactory
-import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Inject
 import io.element.android.features.login.impl.classic.ElementClassicConnection
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 
-@AssistedInject
+@Inject
 class MissingKeyBackupPresenter(
-    @Assisted
-    private val navigator: MissingKeyBackupNavigator,
     private val buildMeta: BuildMeta,
     private val elementClassicConnection: ElementClassicConnection,
 ) : Presenter<MissingKeyBackupState> {
-    @AssistedFactory
-    interface Factory {
-        fun create(
-            navigator: MissingKeyBackupNavigator,
-        ): MissingKeyBackupPresenter
-    }
-
     @Composable
     override fun present(): MissingKeyBackupState {
         var resumeCounter by remember { mutableIntStateOf(0) }
@@ -42,8 +31,7 @@ class MissingKeyBackupPresenter(
                     resumeCounter++
                     if (resumeCounter > 1) {
                         // The user has returned to this screen, we can assume they have gone to the backup flow and are now back here
-                        elementClassicConnection.reset()
-                        navigator.startOver()
+                        elementClassicConnection.requestSession()
                     }
                 }
             }

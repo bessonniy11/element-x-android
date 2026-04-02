@@ -44,7 +44,6 @@ interface ElementClassicConnection {
     fun stop()
     fun requestSession()
     fun requestAvatar(userId: UserId)
-    fun reset()
     val stateFlow: StateFlow<ElementClassicConnectionState>
 }
 
@@ -137,12 +136,6 @@ class DefaultElementClassicConnection(
             serviceBinder.unbindService(serviceConnection)
             bound = false
         }
-        coroutineScope.launch {
-            emitState(ElementClassicConnectionState.Idle)
-        }
-    }
-
-    override fun reset() {
         coroutineScope.launch {
             emitState(ElementClassicConnectionState.Idle)
         }
