@@ -62,8 +62,8 @@ private fun Content(
         modifier = Modifier.padding(top = 50.dp, start = 20.dp, end = 20.dp),
         items = persistentListOf(
             AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_1)),
-            AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_2)),
-            AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_3)),
+            AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_2_android)),
+            AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_3_android)),
             AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_4)),
             AnnotatedString(stringResource(R.string.screen_missing_key_backup_step_5, state.appName)),
         ),
