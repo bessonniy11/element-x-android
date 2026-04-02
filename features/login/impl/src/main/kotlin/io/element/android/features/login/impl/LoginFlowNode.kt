@@ -35,13 +35,13 @@ import io.element.android.features.login.impl.accountprovider.AccountProviderDat
 import io.element.android.features.login.impl.classic.ElementClassicConnection
 import io.element.android.features.login.impl.qrcode.QrCodeLoginFlowNode
 import io.element.android.features.login.impl.screens.changeaccountprovider.ChangeAccountProviderNode
-import io.element.android.features.login.impl.screens.checkclassic.CheckClassicNode
 import io.element.android.features.login.impl.screens.chooseaccountprovider.ChooseAccountProviderNode
+import io.element.android.features.login.impl.screens.classic.checkclassic.CheckClassicNode
+import io.element.android.features.login.impl.screens.classic.loginwithclassic.LoginWithClassicNode
+import io.element.android.features.login.impl.screens.classic.missingkeybackup.MissingKeyBackupNode
 import io.element.android.features.login.impl.screens.confirmaccountprovider.ConfirmAccountProviderNode
 import io.element.android.features.login.impl.screens.createaccount.CreateAccountNode
 import io.element.android.features.login.impl.screens.loginpassword.LoginPasswordNode
-import io.element.android.features.login.impl.screens.loginwithclassic.LoginWithClassicNode
-import io.element.android.features.login.impl.screens.missingkeybackup.MissingKeyBackupNode
 import io.element.android.features.login.impl.screens.onboarding.OnBoardingNode
 import io.element.android.features.login.impl.screens.searchaccountprovider.SearchAccountProviderNode
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
