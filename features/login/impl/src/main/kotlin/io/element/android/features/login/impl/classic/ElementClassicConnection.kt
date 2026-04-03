@@ -320,16 +320,18 @@ class DefaultElementClassicConnection(
                 ElementClassicConnectionState.ElementClassicReadyNoSession
             } else {
                 val secrets = getString(KEY_SECRETS_STR)?.takeIf { it.isNotEmpty() }
+                val roomKeysVersion = getString(KEY_ROOM_KEYS_VERSION_STR)?.takeIf { it.isNotEmpty() }
                 val homeserverUrl = getString(KEY_HOMESERVER_URL_STR)?.takeIf { it.isNotEmpty() }
                 val displayName = getString(KEY_USER_DISPLAY_NAME_STR)?.takeIf { it.isNotEmpty() }
-                val doesContainBackupKey = secrets?.let {
-                    matrixAuthenticationService.doSecretsContainBackupKey(userId, it)
-                }
+                val doesContainBackupKey = secrets != null &&
+                    roomKeysVersion != null &&
+                    matrixAuthenticationService.doSecretsContainBackupKey(userId, secrets, roomKeysVersion)
                 ElementClassicConnectionState.ElementClassicReady(
                     elementClassicSession = ElementClassicSession(
                         userId = userId,
                         homeserverUrl = homeserverUrl,
                         secrets = secrets,
+                        roomKeysVersion = roomKeysVersion,
                         doesContainBackupKey = doesContainBackupKey,
                     ),
                     displayName = displayName,
@@ -372,6 +374,7 @@ class DefaultElementClassicConnection(
          * }
          */
         const val KEY_SECRETS_STR = "secrets"
+        const val KEY_ROOM_KEYS_VERSION_STR = "roomKeysVersion"
 
         // For the avatar
         const val KEY_USER_AVATAR_PARCELABLE = "avatar"

@@ -61,7 +61,11 @@ interface MatrixAuthenticationService {
     /**
      * Check if the provided secrets from Element Classic session contain a key backup.
      */
-    fun doSecretsContainBackupKey(userId: UserId, secrets: String): Boolean?
+    fun doSecretsContainBackupKey(
+        userId: UserId,
+        secrets: String,
+        backupInfo: String,
+    ): Boolean
 
     /**
      * Attempt to login using the [callbackUrl] provided by the Oidc page.

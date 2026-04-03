@@ -27,10 +27,12 @@ fun anElementClassicSession(
     userId: UserId = A_USER_ID,
     homeserverUrl: String? = null,
     secrets: String? = A_SECRET,
+    roomKeysVersion: String? = null,
     doesContainBackupKey: Boolean? = true,
 ) = ElementClassicSession(
     userId = userId,
     homeserverUrl = homeserverUrl,
     secrets = secrets,
+    roomKeysVersion = roomKeysVersion,
     doesContainBackupKey = doesContainBackupKey,
 )

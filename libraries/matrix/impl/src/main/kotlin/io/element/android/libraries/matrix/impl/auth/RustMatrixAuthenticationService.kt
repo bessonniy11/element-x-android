@@ -181,22 +181,22 @@ class RustMatrixAuthenticationService(
                 it.userId.value == client.userId()
             }
             ?.let {
-                when (val secrets = it.secrets) {
-                    null -> Timber.d("No secrets found for Element Classic session ${it.userId}, skipping import")
-                    else -> {
-                        Timber.d("Trying to import secrets for Element Classic session ${it.userId}")
-                        runCatchingExceptions {
-                            SecretsBundleWithUserId.fromStr(
-                                userId = it.userId.value,
-                                bundle = secrets,
-                                // TODO
-                                backupInfo = "",
-                            ).use { secretsBundle ->
-                                client.encryption().importSecretsBundle(secretsBundle)
-                            }
-                        }.onFailure { failure ->
-                            Timber.e(failure, "Failed to import secrets for Element Classic session ${it.userId}")
+                val secrets = it.secrets
+                val roomKeysVersion = it.roomKeysVersion
+                if (secrets == null || roomKeysVersion == null) {
+                    Timber.d("No secrets or roomKeysVersion found for Element Classic session ${it.userId}, skipping import")
+                } else {
+                    Timber.d("Trying to import secrets for Element Classic session ${it.userId}")
+                    runCatchingExceptions {
+                        SecretsBundleWithUserId.fromStr(
+                            userId = it.userId.value,
+                            bundle = secrets,
+                            backupInfo = roomKeysVersion,
+                        ).use { secretsBundle ->
+                            client.encryption().importSecretsBundle(secretsBundle)
                         }
+                    }.onFailure { failure ->
+                        Timber.e(failure, "Failed to import secrets for Element Classic session ${it.userId}")
                     }
                 }
             }
@@ -205,19 +205,19 @@ class RustMatrixAuthenticationService(
     override fun doSecretsContainBackupKey(
         userId: UserId,
         secrets: String,
-    ): Boolean? {
+        backupInfo: String,
+    ): Boolean {
         return try {
             SecretsBundleWithUserId.fromStr(
                 userId = userId.value,
                 bundle = secrets,
-                // TODO
-                backupInfo = "",
+                backupInfo = backupInfo,
             ).use { secretsBundle ->
                 secretsBundle.containsBackupKey()
             }
         } catch (failure: Exception) {
             Timber.e(failure, "Failed to parse secrets for Element Classic session $userId")
-            null
+            false
         }
     }
 
