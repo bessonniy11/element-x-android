@@ -339,6 +339,6 @@ class LoginFlowNode(
                 }
             }
         }
-        BackstackView(transitionHandler = rememberLoginFlowTransitionHandler(backstack))
+        BackstackView(transitionHandler = rememberLoginFlowTransitionHandler())
     }
 }

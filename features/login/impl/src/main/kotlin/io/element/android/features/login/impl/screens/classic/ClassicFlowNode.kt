@@ -27,6 +27,7 @@ import io.element.android.features.login.impl.screens.classic.missingkeybackup.M
 import io.element.android.features.login.impl.screens.classic.root.RootNode
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
+import io.element.android.libraries.architecture.appyx.rememberFaderOrSliderTransitionHandler
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.matrix.api.auth.OidcDetails
@@ -134,6 +135,9 @@ class ClassicFlowNode(
 
     @Composable
     override fun View(modifier: Modifier) {
-        BackstackView(modifier = modifier)
+        BackstackView(
+            modifier = modifier,
+            transitionHandler = rememberFaderOrSliderTransitionHandler(),
+        )
     }
 }
