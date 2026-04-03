@@ -15,6 +15,7 @@ import io.element.android.libraries.sessionstorage.api.toUserListFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.take
 
 @Inject
 class ClassicFlowNodeHelper(
@@ -32,7 +33,9 @@ class ClassicFlowNodeHelper(
                         it
                     }
                 },
-            sessionStore.sessionsFlow().toUserListFlow(),
+            sessionStore.sessionsFlow().toUserListFlow()
+                // Take only 1 emission of the sessions, else when the user actually logged in it will trigger a navigation to OnBoarding.
+                .take(1),
         ) { elementClassicConnectionState, existingSessions ->
             when (elementClassicConnectionState) {
                 ElementClassicConnectionState.Idle -> {

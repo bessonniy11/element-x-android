@@ -171,7 +171,7 @@ class ClassicFlowNodeHelperTest {
     }
 
     @Test
-    fun `navigate to login with classic when the session can be retrieved and navigate again once the session id verified`() = runTest {
+    fun `navigate to login with classic when the session can be retrieved and navigate again once the session is verified`() = runTest {
         val elementClassicConnection = FakeElementClassicConnection()
         createHelper(
             elementClassicConnection = elementClassicConnection,
@@ -224,6 +224,35 @@ class ClassicFlowNodeHelperTest {
                 )
                 val finalState = awaitItem()
                 assertThat(finalState).isEqualTo(NavigationEvent.NavigateToLoginWithClassic(A_USER_ID))
+            }
+    }
+
+    @Test
+    fun `navigate to login with classic but do not navigate to OnBoarding once the user is logged in`() = runTest {
+        val elementClassicConnection = FakeElementClassicConnection()
+        val sessionStore = InMemorySessionStore(
+            initialList = listOf()
+        )
+        createHelper(
+            elementClassicConnection = elementClassicConnection,
+            sessionStore = sessionStore,
+        )
+            .navigationEventFlow()
+            .test {
+                val initialState = awaitItem()
+                assertThat(initialState).isEqualTo(NavigationEvent.Idle)
+                elementClassicConnection.emitState(
+                    anElementClassicReady()
+                )
+                val navigateToLoginWithClassicState = awaitItem()
+                assertThat(navigateToLoginWithClassicState).isEqualTo(NavigationEvent.NavigateToLoginWithClassic(A_USER_ID))
+                // User actually logs in
+                sessionStore.addSession(
+                    aSessionData(
+                        sessionId = A_USER_ID.value,
+                    )
+                )
+                expectNoEvents()
             }
     }
 }
