@@ -27,6 +27,7 @@ import extension.setupDependencyInjection
 import extension.setupKover
 import extension.testCommonDependencies
 import java.util.Locale
+import org.gradle.api.GradleException
 
 plugins {
     id("io.element.android-compose-application")
@@ -45,23 +46,32 @@ setupKover()
 android {
     namespace = "io.element.android.x"
 
+    val supportedAbis = listOf("armeabi-v7a", "x86", "arm64-v8a", "x86_64")
+    val requestedAbi = providers.gradleProperty("targetAbi").orNull?.trim()?.takeIf { it.isNotEmpty() }
+    if (requestedAbi != null && requestedAbi !in supportedAbis) {
+        throw GradleException("Unsupported targetAbi '$requestedAbi'. Supported values: ${supportedAbis.joinToString(", ")}")
+    }
+    val selectedAbis = requestedAbi?.let { listOf(it) } ?: supportedAbis
+    val buildingAppBundle = gradle.startParameter.taskNames.any { it.contains("bundle", ignoreCase = true) }
+    val buildUniversalApk = !buildingAppBundle && requestedAbi == null
+
     defaultConfig {
         applicationId = BuildTimeConfig.APPLICATION_ID
         targetSdk = Versions.TARGET_SDK
         versionCode = Versions.VERSION_CODE
         versionName = Versions.VERSION_NAME
 
-        // Keep abiFilter for the universalApk
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "x86", "arm64-v8a", "x86_64")
+        // Keep abiFilters only for universal APK mode; when targeting a single ABI use splits only.
+        if (buildUniversalApk) {
+            ndk {
+                abiFilters += selectedAbis
+            }
         }
 
         // Ref: https://developer.android.com/studio/build/configure-apk-splits.html#configure-abi-split
         splits {
             // Configures multiple APKs based on ABI.
             abi {
-                val buildingAppBundle = gradle.startParameter.taskNames.any { it.contains("bundle") }
-
                 // Enables building multiple APKs per ABI. This should be disabled when building an AAB.
                 isEnable = !buildingAppBundle
 
@@ -71,10 +81,10 @@ android {
                 reset()
 
                 if (!buildingAppBundle) {
-                    // Specifies a list of ABIs that Gradle should create APKs for.
-                    include("armeabi-v7a", "x86", "arm64-v8a", "x86_64")
-                    // Generate a universal APK that includes all ABIs, so user who installs from CI tool can use this one by default.
-                    isUniversalApk = true
+                    // Build only selected ABI when -PtargetAbi is provided, otherwise build all.
+                    include(*selectedAbis.toTypedArray())
+                    // Universal APK only in default mode (without targetAbi).
+                    isUniversalApk = buildUniversalApk
                 }
             }
         }
