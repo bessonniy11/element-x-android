@@ -16,14 +16,22 @@ import kotlinx.parcelize.Parcelize
 
 data class LoginPasswordState(
     val accountProvider: AccountProvider,
+    val canUseCustomPasswordReset: Boolean,
     val formState: LoginFormState,
     val loginAction: AsyncData<SessionId>,
+    val passwordResetAction: AsyncData<Unit>,
     val eventSink: (LoginPasswordEvents) -> Unit
 ) {
     val submitEnabled: Boolean
         get() = loginAction !is AsyncData.Failure &&
             formState.login.isNotEmpty() &&
             formState.password.isNotEmpty()
+
+    val forgotPasswordEnabled: Boolean
+        get() = canUseCustomPasswordReset &&
+            formState.login.isNotBlank() &&
+            loginAction !is AsyncData.Loading &&
+            passwordResetAction !is AsyncData.Loading
 }
 
 @Parcelize

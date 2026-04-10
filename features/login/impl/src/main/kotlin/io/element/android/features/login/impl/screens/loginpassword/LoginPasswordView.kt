@@ -48,6 +48,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.error.loginError
+import io.element.android.features.login.impl.screens.common.LegalLinksSection
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
 import io.element.android.libraries.designsystem.atomic.molecules.IconTitleSubtitleMolecule
@@ -61,6 +62,7 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Scaffold
+import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TextField
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.testtags.TestTags
@@ -140,6 +142,8 @@ fun LoginPasswordView(
             )
             // Min spacing
             Spacer(Modifier.height(24.dp))
+            LegalLinksSection()
+            Spacer(Modifier.height(12.dp))
             // Flexible spacing to keep the submit button at the bottom
             Spacer(modifier = Modifier.weight(1f))
             // Submit
@@ -165,6 +169,11 @@ fun LoginPasswordView(
                 LoginErrorDialog(error = state.loginAction.error, onDismiss = {
                     state.eventSink(LoginPasswordEvents.ClearError)
                 })
+            }
+            if (state.passwordResetAction is AsyncData.Success) {
+                PasswordResetRequestedDialog(
+                    onDismiss = { state.eventSink(LoginPasswordEvents.ClearPasswordResetNotice) }
+                )
             }
         }
     }
@@ -269,6 +278,15 @@ private fun LoginForm(
             ),
             singleLine = true,
         )
+        if (state.canUseCustomPasswordReset) {
+            Spacer(Modifier.height(12.dp))
+            TextButton(
+                text = stringResource(CommonStrings.action_forgot_password),
+                onClick = { eventSink(LoginPasswordEvents.RequestPasswordReset) },
+                enabled = state.forgotPasswordEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -285,6 +303,15 @@ private fun LoginErrorDialog(error: Throwable, onDismiss: () -> Unit) {
         title = stringResource(id = CommonStrings.dialog_title_error),
         content = stringResource(loginError(error)),
         onSubmit = onDismiss
+    )
+}
+
+@Composable
+private fun PasswordResetRequestedDialog(onDismiss: () -> Unit) {
+    ErrorDialog(
+        title = stringResource(CommonStrings.dialog_title_success),
+        content = stringResource(R.string.screen_login_password_reset_notice),
+        onSubmit = onDismiss,
     )
 }
 

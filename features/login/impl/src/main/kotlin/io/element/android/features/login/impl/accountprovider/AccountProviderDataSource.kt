@@ -25,7 +25,7 @@ class AccountProviderDataSource(
     private val defaultAccountProvider = createAccountProvider(
         url = enterpriseService.defaultHomeserverList()
             .firstOrNull { it != EnterpriseService.ANY_ACCOUNT_PROVIDER }
-            ?: AuthenticationConfig.MATRIX_ORG_URL
+            ?: AuthenticationConfig.DEFAULT_HOMESERVER_URL
     )
 
     private val accountProvider: MutableStateFlow<AccountProvider> = MutableStateFlow(defaultAccountProvider)

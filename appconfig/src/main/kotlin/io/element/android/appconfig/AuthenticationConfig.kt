@@ -10,6 +10,13 @@ package io.element.android.appconfig
 
 object AuthenticationConfig {
     const val MATRIX_ORG_URL = "https://matrix.org"
+    const val DEFAULT_HOMESERVER_URL = "https://matrix.ibessonniy.ru"
+    const val CUSTOM_AUTH_GATEWAY_URL = "https://auth.matrix.ibessonniy.ru"
+    const val CUSTOM_AUTH_MODE = "custom_auth_v1"
+    const val CUSTOM_AUTH_CLIENT_APP = "element-x-android-bessonniy"
+    const val CUSTOM_AUTH_PRIVACY_POLICY_URL = "https://matrix.ibessonniy.ru/privacy"
+    const val CUSTOM_AUTH_TERMS_URL = "https://matrix.ibessonniy.ru/terms"
+    val CUSTOM_AUTH_MANAGED_HOMESERVERS: Set<String> = setOf("matrix.ibessonniy.ru")
 
     /**
      * URL with some docs that explain what's sliding sync and how to add it to your home server.

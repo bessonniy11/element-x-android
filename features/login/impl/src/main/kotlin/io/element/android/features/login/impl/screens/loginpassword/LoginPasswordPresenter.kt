@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import dev.zacsweers.metro.Inject
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
+import io.element.android.features.login.impl.customauth.CustomAuthService
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 class LoginPasswordPresenter(
     private val authenticationService: MatrixAuthenticationService,
     private val accountProviderDataSource: AccountProviderDataSource,
+    private val customAuthService: CustomAuthService,
 ) : Presenter<LoginPasswordState> {
     @Composable
     override fun present(): LoginPasswordState {
@@ -36,11 +38,17 @@ class LoginPasswordPresenter(
         val loginAction: MutableState<AsyncData<SessionId>> = remember {
             mutableStateOf(AsyncData.Uninitialized)
         }
+        val passwordResetAction: MutableState<AsyncData<Unit>> = remember {
+            mutableStateOf(AsyncData.Uninitialized)
+        }
 
         val formState = rememberSaveable {
             mutableStateOf(LoginFormState.Default)
         }
         val accountProvider by accountProviderDataSource.flow.collectAsState()
+        val canUseCustomPasswordReset = remember(accountProvider.url) {
+            customAuthService.isManagedHomeserver(accountProvider.url)
+        }
 
         fun handleEvent(event: LoginPasswordEvents) {
             when (event) {
@@ -51,29 +59,82 @@ class LoginPasswordPresenter(
                     copy(password = event.password)
                 }
                 LoginPasswordEvents.Submit -> {
-                    localCoroutineScope.submit(formState.value, loginAction)
+                    localCoroutineScope.submit(
+                        accountProviderUrl = accountProvider.url,
+                        formState = formState.value,
+                        loggedInState = loginAction,
+                    )
+                }
+                LoginPasswordEvents.RequestPasswordReset -> {
+                    localCoroutineScope.requestPasswordReset(
+                        accountProviderUrl = accountProvider.url,
+                        identifier = formState.value.login.trim(),
+                        passwordResetState = passwordResetAction,
+                    )
                 }
                 LoginPasswordEvents.ClearError -> loginAction.value = AsyncData.Uninitialized
+                LoginPasswordEvents.ClearPasswordResetNotice -> passwordResetAction.value = AsyncData.Uninitialized
             }
         }
 
         return LoginPasswordState(
             accountProvider = accountProvider,
+            canUseCustomPasswordReset = canUseCustomPasswordReset,
             formState = formState.value,
             loginAction = loginAction.value,
+            passwordResetAction = passwordResetAction.value,
             eventSink = ::handleEvent,
         )
     }
 
-    private fun CoroutineScope.submit(formState: LoginFormState, loggedInState: MutableState<AsyncData<SessionId>>) = launch {
+    private fun CoroutineScope.submit(
+        accountProviderUrl: String,
+        formState: LoginFormState,
+        loggedInState: MutableState<AsyncData<SessionId>>
+    ) = launch {
         loggedInState.value = AsyncData.Loading()
-        authenticationService.login(formState.login.trim(), formState.password)
+        val result = if (customAuthService.isManagedHomeserver(accountProviderUrl)) {
+            customAuthService.loginByIdentifier(
+                homeserverUrl = accountProviderUrl,
+                identifier = formState.login.trim(),
+                password = formState.password,
+            ).fold(
+                onSuccess = { externalSession ->
+                    authenticationService.importCreatedSession(externalSession)
+                },
+                onFailure = {
+                    // Compatibility fallback: allow legacy login if gateway is unavailable.
+                    authenticationService.login(formState.login.trim(), formState.password)
+                }
+            )
+        } else {
+            authenticationService.login(formState.login.trim(), formState.password)
+        }
+
+        result
             .onSuccess { sessionId ->
                 loggedInState.value = AsyncData.Success(sessionId)
             }
             .onFailure { failure ->
                 loggedInState.value = AsyncData.Failure(failure)
             }
+    }
+
+    private fun CoroutineScope.requestPasswordReset(
+        accountProviderUrl: String,
+        identifier: String,
+        passwordResetState: MutableState<AsyncData<Unit>>,
+    ) = launch {
+        if (identifier.isBlank()) return@launch
+        passwordResetState.value = AsyncData.Loading()
+        if (customAuthService.isManagedHomeserver(accountProviderUrl)) {
+            customAuthService.requestPasswordReset(
+                homeserverUrl = accountProviderUrl,
+                identifier = identifier,
+            )
+        }
+        // Always present the same UX result to avoid account enumeration.
+        passwordResetState.value = AsyncData.Success(Unit)
     }
 
     private fun updateFormState(formState: MutableState<LoginFormState>, updateLambda: LoginFormState.() -> LoginFormState) {

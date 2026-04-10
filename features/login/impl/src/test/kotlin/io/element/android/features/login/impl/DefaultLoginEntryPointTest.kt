@@ -15,9 +15,20 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.features.login.api.LoginEntryPoint
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
+import io.element.android.features.login.impl.customauth.CustomAuthService
+import io.element.android.features.login.impl.customauth.PasswordResetAcceptance
+import io.element.android.features.login.impl.customauth.AvatarUploadAcceptance
+import io.element.android.features.login.impl.customauth.RegistrationStartAcceptance
+import io.element.android.features.login.impl.customauth.RegistrationStatus
+import io.element.android.features.login.impl.customauth.RegistrationVerifyAcceptance
+import io.element.android.features.login.impl.registrationdraft.RegistrationDraft
+import io.element.android.features.login.impl.registrationdraft.RegistrationDraftStore
+import io.element.android.libraries.matrix.api.auth.external.ExternalSession
 import io.element.android.libraries.oidc.test.customtab.FakeOidcActionFlow
 import io.element.android.tests.testutils.lambda.lambdaError
 import io.element.android.tests.testutils.node.TestParentNode
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +48,8 @@ class DefaultLoginEntryPointTest {
                 buildContext = buildContext,
                 plugins = plugins,
                 accountProviderDataSource = AccountProviderDataSource(FakeEnterpriseService()),
+                customAuthService = FakeCustomAuthService(),
+                registrationDraftStore = FakeRegistrationDraftStore(),
                 oidcActionFlow = FakeOidcActionFlow(),
                 appCoroutineScope = backgroundScope,
             )
@@ -59,4 +72,67 @@ class DefaultLoginEntryPointTest {
         assertThat(result.plugins).contains(LoginFlowNode.Params(params.accountProvider, params.loginHint))
         assertThat(result.plugins).contains(callback)
     }
+}
+
+private class FakeRegistrationDraftStore : RegistrationDraftStore {
+    private val draft = MutableStateFlow<RegistrationDraft?>(null)
+
+    override fun draftFlow(): Flow<RegistrationDraft?> = draft
+
+    override suspend fun saveDraft(draft: RegistrationDraft) {
+        this.draft.value = draft
+    }
+
+    override suspend fun clear() {
+        draft.value = null
+    }
+}
+
+private class FakeCustomAuthService : CustomAuthService {
+    override fun isManagedHomeserver(homeserverUrl: String): Boolean = false
+
+    override suspend fun loginByIdentifier(
+        homeserverUrl: String,
+        identifier: String,
+        password: String,
+    ): Result<ExternalSession> = Result.failure(UnsupportedOperationException())
+
+    override suspend fun requestPasswordReset(
+        homeserverUrl: String,
+        identifier: String,
+    ): Result<PasswordResetAcceptance> = Result.success(
+        PasswordResetAcceptance(
+            accepted = true,
+            retryAfterSeconds = 120,
+        )
+    )
+
+    override suspend fun startRegistration(
+        homeserverUrl: String,
+        login: String,
+        email: String,
+    ): Result<RegistrationStartAcceptance> = Result.failure(UnsupportedOperationException())
+
+    override suspend fun verifyRegistrationPassword(
+        registrationSessionId: String,
+        password: String,
+    ): Result<RegistrationVerifyAcceptance> = Result.failure(UnsupportedOperationException())
+
+    override suspend fun getRegistrationStatus(registrationSessionId: String): Result<RegistrationStatus> {
+        return Result.success(RegistrationStatus(status = "pending"))
+    }
+
+    override suspend fun completeRegistration(
+        homeserverUrl: String,
+        verifiedToken: String,
+        displayName: String,
+        phone: String,
+        avatarUploadRef: String?,
+    ): Result<ExternalSession> = Result.failure(UnsupportedOperationException())
+
+    override suspend fun uploadRegistrationAvatar(
+        registrationSessionId: String,
+        contentType: String,
+        contentBase64: String,
+    ): Result<AvatarUploadAcceptance> = Result.failure(UnsupportedOperationException())
 }

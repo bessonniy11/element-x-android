@@ -27,13 +27,17 @@ open class LoginPasswordStateProvider : PreviewParameterProvider<LoginPasswordSt
 
 fun aLoginPasswordState(
     accountProvider: AccountProvider = anAccountProvider(),
+    canUseCustomPasswordReset: Boolean = true,
     formState: LoginFormState = LoginFormState.Default,
     loginAction: AsyncData<SessionId> = AsyncData.Uninitialized,
+    passwordResetAction: AsyncData<Unit> = AsyncData.Uninitialized,
     eventSink: (LoginPasswordEvents) -> Unit = {},
 ) = LoginPasswordState(
     accountProvider = accountProvider,
+    canUseCustomPasswordReset = canUseCustomPasswordReset,
     formState = formState,
     loginAction = loginAction,
+    passwordResetAction = passwordResetAction,
     eventSink = eventSink,
 )
 

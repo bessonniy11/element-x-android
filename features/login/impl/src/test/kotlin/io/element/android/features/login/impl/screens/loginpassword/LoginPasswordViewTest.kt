@@ -162,6 +162,19 @@ class LoginPasswordViewTest {
         rule.onNodeWithText(continueStr).assertIsNotEnabled()
     }
 
+    @Test
+    fun `when login is empty, forgot password button is not enabled`() {
+        val eventsRecorder = EventsRecorder<LoginPasswordEvents>(expectEvents = false)
+        rule.setLoginPasswordView(
+            aLoginPasswordState(
+                formState = aLoginFormState(password = A_PASSWORD),
+                eventSink = eventsRecorder,
+            ),
+        )
+        val forgotPasswordStr = rule.activity.getString(CommonStrings.action_forgot_password)
+        rule.onNodeWithText(forgotPasswordStr).assertIsNotEnabled()
+    }
+
     @Config(qualifiers = "h1024dp")
     @Test
     fun `clicking on Continue sends expected event`() {
@@ -177,6 +190,23 @@ class LoginPasswordViewTest {
         rule.clickOn(CommonStrings.action_continue)
         eventsRecorder.assertSingle(
             LoginPasswordEvents.Submit
+        )
+    }
+
+    @Test
+    fun `clicking on forgot password sends expected event`() {
+        val eventsRecorder = EventsRecorder<LoginPasswordEvents>()
+        rule.setLoginPasswordView(
+            aLoginPasswordState(
+                formState = aLoginFormState(login = A_USER_NAME),
+                eventSink = eventsRecorder,
+            ),
+        )
+        val forgotPasswordStr = rule.activity.getString(CommonStrings.action_forgot_password)
+        rule.onNodeWithText(forgotPasswordStr).assertIsEnabled()
+        rule.clickOn(CommonStrings.action_forgot_password)
+        eventsRecorder.assertSingle(
+            LoginPasswordEvents.RequestPasswordReset
         )
     }
 }
