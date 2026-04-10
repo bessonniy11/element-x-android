@@ -16,7 +16,7 @@
   <string name="screen_registration_verify_password_label">"Пароль из письма"</string>
   <string name="screen_registration_profile_title">"Завершение регистрации"</string>
   <string name="screen_registration_profile_subtitle">"Заполните данные профиля для %1$s."</string>
-  <string name="screen_registration_profile_display_name_label">"Имя пользователя"</string>
+  <string name="screen_registration_profile_display_name_label">"Имя Фамилия"</string>
   <string name="screen_registration_profile_phone_label">"Телефон"</string>
   <string name="screen_registration_profile_phone_placeholder">"+7 (999) 999 99 99"</string>
   <string name="screen_registration_profile_email_label">"Email"</string>

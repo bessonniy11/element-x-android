@@ -132,12 +132,16 @@ class RegistrationProfilePresenter(
                 RegistrationProfileEvents.ClearAvatarError -> {
                     avatarUploadAction.value = AsyncData.Uninitialized
                 }
-                RegistrationProfileEvents.Submit -> {
-                    val normalizedPhone = normalizeRuPhoneForBackend(phone) ?: return
+                is RegistrationProfileEvents.Submit -> {
+                    val displayNameForSubmit = event.displayName.trim()
+                    val normalizedPhone = normalizeRuPhoneForBackend(event.phone) ?: return
+                    if (displayNameForSubmit.isBlank()) return
+                    displayName = event.displayName
+                    phone = event.phone
                     localCoroutineScope.completeRegistration(
                         homeserverUrl = accountProvider.url,
                         verifiedToken = verifiedToken,
-                        displayName = displayName.trim(),
+                        displayName = displayNameForSubmit,
                         phone = normalizedPhone,
                         avatarUploadRef = avatarUploadRef,
                         completeAction = completeAction,

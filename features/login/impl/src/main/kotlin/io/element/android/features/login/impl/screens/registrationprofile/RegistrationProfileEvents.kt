@@ -13,7 +13,10 @@ sealed interface RegistrationProfileEvents {
     data class SetPhone(val phone: String) : RegistrationProfileEvents
     data object PickAvatar : RegistrationProfileEvents
     data object RemoveAvatar : RegistrationProfileEvents
-    data object Submit : RegistrationProfileEvents
+    data class Submit(
+        val displayName: String,
+        val phone: String,
+    ) : RegistrationProfileEvents
     data object ClearAvatarError : RegistrationProfileEvents
     data object ClearError : RegistrationProfileEvents
 }

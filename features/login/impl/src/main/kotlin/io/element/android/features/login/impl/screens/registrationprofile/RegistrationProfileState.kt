@@ -28,6 +28,5 @@ data class RegistrationProfileState(
     val submitEnabled: Boolean
         get() = displayName.isNotBlank() &&
             isPhoneValid &&
-            avatarUploadAction !is AsyncData.Loading &&
             completeAction !is AsyncData.Loading
 }
