@@ -20,6 +20,7 @@ data class LoginPasswordState(
     val formState: LoginFormState,
     val loginAction: AsyncData<SessionId>,
     val passwordResetAction: AsyncData<Unit>,
+    val forgotPasswordCooldownEndsAtEpochMillis: Long,
     val eventSink: (LoginPasswordEvents) -> Unit
 ) {
     val submitEnabled: Boolean
@@ -31,7 +32,8 @@ data class LoginPasswordState(
         get() = canUseCustomPasswordReset &&
             formState.login.isNotBlank() &&
             loginAction !is AsyncData.Loading &&
-            passwordResetAction !is AsyncData.Loading
+            passwordResetAction !is AsyncData.Loading &&
+            System.currentTimeMillis() >= forgotPasswordCooldownEndsAtEpochMillis
 }
 
 @Parcelize

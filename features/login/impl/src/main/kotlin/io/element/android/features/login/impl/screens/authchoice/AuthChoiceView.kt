@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.features.login.impl.customauth.defaultCustomAuthLegalLinks
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.screens.common.LegalLinksSection
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
@@ -40,6 +41,8 @@ import io.element.android.libraries.designsystem.theme.components.TopAppBar
 fun AuthChoiceView(
     homeserverTitle: String,
     canRegister: Boolean,
+    privacyPolicyUrl: String = defaultCustomAuthLegalLinks().privacyPolicyUrl,
+    termsUrl: String = defaultCustomAuthLegalLinks().termsUrl,
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
@@ -60,25 +63,26 @@ fun AuthChoiceView(
                 .imePadding()
                 .padding(padding)
                 .consumeWindowInsets(padding)
-                .verticalScroll(state = rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
         ) {
-            IconTitleSubtitleMolecule(
-                modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
-                iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
-                title = stringResource(
-                    id = R.string.screen_account_provider_signin_title,
-                    homeserverTitle,
-                ),
-                subTitle = stringResource(id = R.string.screen_auth_choice_subtitle),
-            )
-            Spacer(Modifier.height(24.dp))
-            LegalLinksSection()
-            Spacer(Modifier.height(12.dp))
-            Spacer(modifier = Modifier.weight(1f))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(state = rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp),
+            ) {
+                IconTitleSubtitleMolecule(
+                    modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
+                    iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
+                    title = stringResource(
+                        id = R.string.screen_account_provider_signin_title,
+                        homeserverTitle,
+                    ),
+                    subTitle = stringResource(id = R.string.screen_auth_choice_subtitle),
+                )
+            }
 
             Box(
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(start = 36.dp, end = 36.dp, bottom = 20.dp)
             ) {
                 ButtonColumnMolecule {
                     Button(
@@ -93,7 +97,11 @@ fun AuthChoiceView(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-                    Spacer(modifier = Modifier.height(48.dp))
+                    Spacer(Modifier.height(12.dp))
+                    LegalLinksSection(
+                        privacyPolicyUrl = privacyPolicyUrl,
+                        termsUrl = termsUrl,
+                    )
                 }
             }
         }

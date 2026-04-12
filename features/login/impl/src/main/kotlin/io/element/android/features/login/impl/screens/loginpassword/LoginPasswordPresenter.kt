@@ -9,9 +9,11 @@
 package io.element.android.features.login.impl.screens.loginpassword
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableLongState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,6 +34,10 @@ class LoginPasswordPresenter(
     private val accountProviderDataSource: AccountProviderDataSource,
     private val customAuthService: CustomAuthService,
 ) : Presenter<LoginPasswordState> {
+    companion object {
+        private const val MIN_PASSWORD_RESET_COOLDOWN_SECONDS = 120
+    }
+
     @Composable
     override fun present(): LoginPasswordState {
         val localCoroutineScope = rememberCoroutineScope()
@@ -40,6 +46,9 @@ class LoginPasswordPresenter(
         }
         val passwordResetAction: MutableState<AsyncData<Unit>> = remember {
             mutableStateOf(AsyncData.Uninitialized)
+        }
+        val forgotPasswordCooldownEndsAtEpochMillis = rememberSaveable {
+            mutableLongStateOf(0L)
         }
 
         val formState = rememberSaveable {
@@ -66,10 +75,12 @@ class LoginPasswordPresenter(
                     )
                 }
                 LoginPasswordEvents.RequestPasswordReset -> {
+                    if (System.currentTimeMillis() < forgotPasswordCooldownEndsAtEpochMillis.longValue) return
                     localCoroutineScope.requestPasswordReset(
                         accountProviderUrl = accountProvider.url,
                         identifier = formState.value.login.trim(),
                         passwordResetState = passwordResetAction,
+                        forgotPasswordCooldownEndsAtEpochMillis = forgotPasswordCooldownEndsAtEpochMillis,
                     )
                 }
                 LoginPasswordEvents.ClearError -> loginAction.value = AsyncData.Uninitialized
@@ -83,6 +94,7 @@ class LoginPasswordPresenter(
             formState = formState.value,
             loginAction = loginAction.value,
             passwordResetAction = passwordResetAction.value,
+            forgotPasswordCooldownEndsAtEpochMillis = forgotPasswordCooldownEndsAtEpochMillis.longValue,
             eventSink = ::handleEvent,
         )
     }
@@ -124,14 +136,22 @@ class LoginPasswordPresenter(
         accountProviderUrl: String,
         identifier: String,
         passwordResetState: MutableState<AsyncData<Unit>>,
+        forgotPasswordCooldownEndsAtEpochMillis: MutableLongState,
     ) = launch {
         if (identifier.isBlank()) return@launch
         passwordResetState.value = AsyncData.Loading()
+        val now = System.currentTimeMillis()
         if (customAuthService.isManagedHomeserver(accountProviderUrl)) {
-            customAuthService.requestPasswordReset(
+            val resetResult = customAuthService.requestPasswordReset(
                 homeserverUrl = accountProviderUrl,
                 identifier = identifier,
             )
+            val retryAfterSeconds = resetResult
+                .getOrNull()
+                ?.retryAfterSeconds
+                ?.coerceAtLeast(MIN_PASSWORD_RESET_COOLDOWN_SECONDS)
+                ?: MIN_PASSWORD_RESET_COOLDOWN_SECONDS
+            forgotPasswordCooldownEndsAtEpochMillis.longValue = now + retryAfterSeconds * 1000L
         }
         // Always present the same UX result to avoid account enumeration.
         passwordResetState.value = AsyncData.Success(Unit)

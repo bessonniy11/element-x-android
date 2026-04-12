@@ -17,6 +17,8 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.features.login.impl.customauth.CustomAuthService
+import io.element.android.features.login.impl.screens.common.rememberRuntimeLegalLinks
 
 @ContributesNode(AppScope::class)
 @AssistedInject
@@ -24,12 +26,19 @@ class LoginPasswordNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
     private val presenter: LoginPasswordPresenter,
+    private val customAuthService: CustomAuthService,
 ) : Node(buildContext, plugins = plugins) {
     @Composable
     override fun View(modifier: Modifier) {
         val state = presenter.present()
+        val legalLinks = rememberRuntimeLegalLinks(
+            homeserverUrl = state.accountProvider.url,
+            customAuthService = customAuthService,
+        )
         LoginPasswordView(
             state = state,
+            privacyPolicyUrl = legalLinks.privacyPolicyUrl,
+            termsUrl = legalLinks.termsUrl,
             modifier = modifier,
             onBackClick = ::navigateUp,
         )

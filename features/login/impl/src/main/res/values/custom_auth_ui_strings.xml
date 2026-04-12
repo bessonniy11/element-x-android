@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_login_form_identifier_header">Enter login or email</string>
+    <string name="screen_login_forgot_password_retry_in">Retry in %1$s</string>
+</resources>

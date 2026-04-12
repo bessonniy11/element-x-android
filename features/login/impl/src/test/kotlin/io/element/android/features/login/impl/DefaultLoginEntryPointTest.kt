@@ -16,11 +16,13 @@ import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.features.login.api.LoginEntryPoint
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.customauth.CustomAuthService
+import io.element.android.features.login.impl.customauth.CustomAuthLegalLinks
 import io.element.android.features.login.impl.customauth.PasswordResetAcceptance
 import io.element.android.features.login.impl.customauth.AvatarUploadAcceptance
 import io.element.android.features.login.impl.customauth.RegistrationStartAcceptance
 import io.element.android.features.login.impl.customauth.RegistrationStatus
 import io.element.android.features.login.impl.customauth.RegistrationVerifyAcceptance
+import io.element.android.features.login.impl.customauth.defaultCustomAuthLegalLinks
 import io.element.android.features.login.impl.registrationdraft.RegistrationDraft
 import io.element.android.features.login.impl.registrationdraft.RegistrationDraftStore
 import io.element.android.libraries.matrix.api.auth.external.ExternalSession
@@ -135,4 +137,8 @@ private class FakeCustomAuthService : CustomAuthService {
         contentType: String,
         contentBase64: String,
     ): Result<AvatarUploadAcceptance> = Result.failure(UnsupportedOperationException())
+
+    override suspend fun getLegalLinks(homeserverUrl: String): CustomAuthLegalLinks {
+        return defaultCustomAuthLegalLinks()
+    }
 }

@@ -21,6 +21,7 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.customauth.CustomAuthService
+import io.element.android.features.login.impl.screens.common.rememberRuntimeLegalLinks
 import io.element.android.libraries.architecture.callback
 
 @ContributesNode(AppScope::class)
@@ -43,10 +44,16 @@ class AuthChoiceNode(
     override fun View(modifier: Modifier) {
         val accountProvider by accountProviderDataSource.flow.collectAsState()
         val isManagedHomeserver = customAuthService.isManagedHomeserver(accountProvider.url)
+        val legalLinks = rememberRuntimeLegalLinks(
+            homeserverUrl = accountProvider.url,
+            customAuthService = customAuthService,
+        )
 
         AuthChoiceView(
             homeserverTitle = accountProvider.title,
             canRegister = isManagedHomeserver,
+            privacyPolicyUrl = legalLinks.privacyPolicyUrl,
+            termsUrl = legalLinks.termsUrl,
             onBackClick = callback::onBack,
             onLoginClick = { callback.onLoginSelected(isManagedHomeserver) },
             onRegisterClick = callback::onRegisterSelected,
@@ -54,4 +61,3 @@ class AuthChoiceNode(
         )
     }
 }
-

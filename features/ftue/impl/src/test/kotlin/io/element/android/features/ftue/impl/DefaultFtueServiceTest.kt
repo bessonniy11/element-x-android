@@ -131,9 +131,6 @@ class DefaultFtueServiceTest {
             lockScreenService.setIsPinSetup(true)
             // Simulate event from LockScreenEntryPoint.Callback.onSetupDone()
             service.updateFtueStep()
-            // Analytics opt in
-            assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.AnalyticsOptIn))
-            analyticsService.setDidAskUserConsent()
             // Final step
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Complete)
         }
@@ -159,9 +156,6 @@ class DefaultFtueServiceTest {
 
         service.ftueStepStateFlow.test {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
-            // Analytics opt in
-            assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.AnalyticsOptIn))
-            analyticsService.setDidAskUserConsent()
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Complete)
         }
     }
@@ -184,9 +178,6 @@ class DefaultFtueServiceTest {
 
         service.ftueStepStateFlow.test {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
-            // Analytics opt in
-            assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.AnalyticsOptIn))
-            analyticsService.setDidAskUserConsent()
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Complete)
         }
     }

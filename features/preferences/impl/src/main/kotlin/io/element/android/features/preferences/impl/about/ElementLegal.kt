@@ -14,23 +14,26 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
-private const val COPYRIGHT_URL = BuildConfig.URL_COPYRIGHT
 private const val USE_POLICY_URL = BuildConfig.URL_ACCEPTABLE_USE
 private const val PRIVACY_URL = BuildConfig.URL_PRIVACY
 
-sealed class ElementLegal(
+data class ElementLegal(
     @StringRes val titleRes: Int,
     val url: String,
-) {
-    data object Copyright : ElementLegal(CommonStrings.common_copyright, COPYRIGHT_URL)
-    data object AcceptableUsePolicy : ElementLegal(CommonStrings.common_acceptable_use_policy, USE_POLICY_URL)
-    data object PrivacyPolicy : ElementLegal(CommonStrings.common_privacy_policy, PRIVACY_URL)
-}
+)
 
-fun getAllLegals(): ImmutableList<ElementLegal> {
+fun getAllLegals(
+    termsUrl: String = USE_POLICY_URL,
+    privacyPolicyUrl: String = PRIVACY_URL,
+): ImmutableList<ElementLegal> {
     return persistentListOf(
-        ElementLegal.Copyright,
-        ElementLegal.AcceptableUsePolicy,
-        ElementLegal.PrivacyPolicy,
+        ElementLegal(
+            titleRes = CommonStrings.common_acceptable_use_policy,
+            url = termsUrl,
+        ),
+        ElementLegal(
+            titleRes = CommonStrings.common_privacy_policy,
+            url = privacyPolicyUrl,
+        ),
     )
 }

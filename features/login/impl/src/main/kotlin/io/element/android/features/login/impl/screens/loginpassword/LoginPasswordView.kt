@@ -24,9 +24,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import io.element.android.features.login.impl.customauth.defaultCustomAuthLegalLinks
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.login.impl.R
@@ -68,12 +71,16 @@ import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.strings.CommonStrings
+import kotlinx.coroutines.delay
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginPasswordView(
     state: LoginPasswordState,
     onBackClick: () -> Unit,
+    privacyPolicyUrl: String = defaultCustomAuthLegalLinks().privacyPolicyUrl,
+    termsUrl: String = defaultCustomAuthLegalLinks().termsUrl,
     modifier: Modifier = Modifier,
 ) {
     val autofillManager = LocalAutofillManager.current
@@ -113,56 +120,59 @@ fun LoginPasswordView(
             )
         }
     ) { padding ->
-        val scrollState = rememberScrollState()
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
                 .padding(padding)
                 .consumeWindowInsets(padding)
-                .verticalScroll(state = scrollState)
-                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
         ) {
-            // Title
-            IconTitleSubtitleMolecule(
-                modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
-                iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
-                title = stringResource(
-                    id = R.string.screen_account_provider_signin_title,
-                    state.accountProvider.title
-                ),
-                subTitle = stringResource(id = R.string.screen_login_subtitle)
-            )
-            Spacer(Modifier.height(40.dp))
-            LoginForm(
-                state = state,
-                isLoading = isLoading,
-                onSubmit = ::submit
-            )
-            // Min spacing
-            Spacer(Modifier.height(24.dp))
-            LegalLinksSection()
-            Spacer(Modifier.height(12.dp))
-            // Flexible spacing to keep the submit button at the bottom
-            Spacer(modifier = Modifier.weight(1f))
-            // Submit
-            Box(
+            Column(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .weight(1f)
+                    .verticalScroll(state = rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp),
             ) {
-                ButtonColumnMolecule {
-                    Button(
-                        text = stringResource(CommonStrings.action_continue),
-                        showProgress = isLoading,
-                        onClick = ::submit,
-                        enabled = state.submitEnabled || isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag(TestTags.loginContinue)
-                    )
-                    Spacer(modifier = Modifier.height(48.dp))
+                IconTitleSubtitleMolecule(
+                    modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
+                    iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
+                    title = stringResource(
+                        id = R.string.screen_account_provider_signin_title,
+                        state.accountProvider.title
+                    ),
+                    subTitle = stringResource(id = R.string.screen_login_subtitle)
+                )
+                Spacer(Modifier.height(40.dp))
+                LoginForm(
+                    state = state,
+                    isLoading = isLoading,
+                    onSubmit = ::submit
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 36.dp, end = 36.dp, bottom = 20.dp),
+            ) {
+                Box {
+                    ButtonColumnMolecule {
+                        Button(
+                            text = stringResource(CommonStrings.action_continue),
+                            showProgress = isLoading,
+                            onClick = ::submit,
+                            enabled = state.submitEnabled || isLoading,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TestTags.loginContinue)
+                        )
+                    }
                 }
+                Spacer(Modifier.height(12.dp))
+                LegalLinksSection(
+                    privacyPolicyUrl = privacyPolicyUrl,
+                    termsUrl = termsUrl,
+                )
             }
 
             if (state.loginAction is AsyncData.Failure) {
@@ -190,10 +200,26 @@ private fun LoginForm(
 
     val focusManager = LocalFocusManager.current
     val eventSink = state.eventSink
+    var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val cooldownRemainingSeconds = remember(state.forgotPasswordCooldownEndsAtEpochMillis, currentTimeMillis) {
+        val remainingMillis = state.forgotPasswordCooldownEndsAtEpochMillis - currentTimeMillis
+        if (remainingMillis <= 0) {
+            0
+        } else {
+            (remainingMillis / 1000L).toInt().coerceAtLeast(1)
+        }
+    }
+
+    LaunchedEffect(state.forgotPasswordCooldownEndsAtEpochMillis) {
+        while (System.currentTimeMillis() < state.forgotPasswordCooldownEndsAtEpochMillis) {
+            delay(1000)
+            currentTimeMillis = System.currentTimeMillis()
+        }
+    }
 
     Column {
         TextField(
-            label = stringResource(R.string.screen_login_form_header),
+            label = stringResource(R.string.screen_login_form_identifier_header),
             value = loginFieldState,
             enabled = !isLoading,
             modifier = Modifier
@@ -210,7 +236,7 @@ private fun LoginForm(
                 eventSink(LoginPasswordEvents.SetLogin(sanitized))
             },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
+                keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(onNext = {
@@ -280,10 +306,18 @@ private fun LoginForm(
         )
         if (state.canUseCustomPasswordReset) {
             Spacer(Modifier.height(12.dp))
+            val forgotPasswordText = if (cooldownRemainingSeconds > 0) {
+                stringResource(
+                    id = R.string.screen_login_forgot_password_retry_in,
+                    cooldownRemainingSeconds.toMinuteSecondFormat(),
+                )
+            } else {
+                stringResource(CommonStrings.action_forgot_password)
+            }
             TextButton(
-                text = stringResource(CommonStrings.action_forgot_password),
+                text = forgotPasswordText,
                 onClick = { eventSink(LoginPasswordEvents.RequestPasswordReset) },
-                enabled = state.forgotPasswordEnabled,
+                enabled = state.forgotPasswordEnabled && cooldownRemainingSeconds == 0,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -295,6 +329,12 @@ private fun LoginForm(
  */
 private fun String.sanitize(): String {
     return replace("\n", "")
+}
+
+private fun Int.toMinuteSecondFormat(): String {
+    val minutes = this / 60
+    val seconds = this % 60
+    return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
 }
 
 @Composable

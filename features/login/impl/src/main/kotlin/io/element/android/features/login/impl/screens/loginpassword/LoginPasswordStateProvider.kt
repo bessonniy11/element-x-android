@@ -31,6 +31,7 @@ fun aLoginPasswordState(
     formState: LoginFormState = LoginFormState.Default,
     loginAction: AsyncData<SessionId> = AsyncData.Uninitialized,
     passwordResetAction: AsyncData<Unit> = AsyncData.Uninitialized,
+    forgotPasswordCooldownEndsAtEpochMillis: Long = 0L,
     eventSink: (LoginPasswordEvents) -> Unit = {},
 ) = LoginPasswordState(
     accountProvider = accountProvider,
@@ -38,6 +39,7 @@ fun aLoginPasswordState(
     formState = formState,
     loginAction = loginAction,
     passwordResetAction = passwordResetAction,
+    forgotPasswordCooldownEndsAtEpochMillis = forgotPasswordCooldownEndsAtEpochMillis,
     eventSink = eventSink,
 )
 

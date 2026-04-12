@@ -21,6 +21,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.element.android.features.login.impl.R
 import io.element.android.libraries.matrix.test.A_PASSWORD
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.testtags.TestTags
@@ -208,6 +209,20 @@ class LoginPasswordViewTest {
         eventsRecorder.assertSingle(
             LoginPasswordEvents.RequestPasswordReset
         )
+    }
+
+    @Test
+    fun `when cooldown is active forgot password button is disabled and shows timer`() {
+        val eventsRecorder = EventsRecorder<LoginPasswordEvents>(expectEvents = false)
+        rule.setLoginPasswordView(
+            aLoginPasswordState(
+                formState = aLoginFormState(login = A_USER_NAME),
+                forgotPasswordCooldownEndsAtEpochMillis = System.currentTimeMillis() + 65_000L,
+                eventSink = eventsRecorder,
+            ),
+        )
+        val retryPrefix = rule.activity.getString(R.string.screen_login_forgot_password_retry_in, "").trim()
+        rule.onNode(hasText(retryPrefix, substring = true)).assertIsNotEnabled()
     }
 }
 

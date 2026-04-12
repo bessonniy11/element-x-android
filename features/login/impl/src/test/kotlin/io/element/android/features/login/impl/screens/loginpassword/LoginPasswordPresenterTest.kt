@@ -14,10 +14,12 @@ import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
 import io.element.android.features.login.impl.customauth.CustomAuthService
 import io.element.android.features.login.impl.customauth.AvatarUploadAcceptance
+import io.element.android.features.login.impl.customauth.CustomAuthLegalLinks
 import io.element.android.features.login.impl.customauth.PasswordResetAcceptance
 import io.element.android.features.login.impl.customauth.RegistrationStartAcceptance
 import io.element.android.features.login.impl.customauth.RegistrationStatus
 import io.element.android.features.login.impl.customauth.RegistrationVerifyAcceptance
+import io.element.android.features.login.impl.customauth.defaultCustomAuthLegalLinks
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.matrix.api.auth.external.ExternalSession
 import io.element.android.libraries.matrix.api.core.SessionId
@@ -45,6 +47,7 @@ class LoginPasswordPresenterTest {
             assertThat(initialState.formState).isEqualTo(LoginFormState.Default)
             assertThat(initialState.loginAction).isEqualTo(AsyncData.Uninitialized)
             assertThat(initialState.passwordResetAction).isEqualTo(AsyncData.Uninitialized)
+            assertThat(initialState.forgotPasswordCooldownEndsAtEpochMillis).isEqualTo(0L)
             assertThat(initialState.submitEnabled).isFalse()
         }
     }
@@ -221,9 +224,37 @@ class LoginPasswordPresenterTest {
             }
             assertThat(successState.passwordResetAction).isEqualTo(AsyncData.Success(Unit))
             assertThat(customAuthService.requestPasswordResetCalls).isEqualTo(1)
+            assertThat(successState.forgotPasswordCooldownEndsAtEpochMillis).isGreaterThan(0L)
+            assertThat(successState.forgotPasswordEnabled).isFalse()
             successState.eventSink.invoke(LoginPasswordEvents.ClearPasswordResetNotice)
             val clearedState = awaitItem()
             assertThat(clearedState.passwordResetAction).isEqualTo(AsyncData.Uninitialized)
+        }
+    }
+
+    @Test
+    fun `present - request password reset in cooldown is ignored`() = runTest {
+        val customAuthService = FakeCustomAuthService(
+            managedHomeserverPredicate = { true },
+        )
+        createLoginPasswordPresenter(
+            customAuthService = customAuthService,
+        ).test {
+            val initialState = awaitItem()
+            initialState.eventSink.invoke(LoginPasswordEvents.SetLogin(A_USER_NAME))
+            val loginState = awaitItem()
+            loginState.eventSink.invoke(LoginPasswordEvents.RequestPasswordReset)
+            val stateAfterRequest = awaitItem()
+            val successState = if (stateAfterRequest.passwordResetAction is AsyncData.Loading) {
+                awaitItem()
+            } else {
+                stateAfterRequest
+            }
+            assertThat(customAuthService.requestPasswordResetCalls).isEqualTo(1)
+
+            successState.eventSink.invoke(LoginPasswordEvents.RequestPasswordReset)
+            expectNoEvents()
+            assertThat(customAuthService.requestPasswordResetCalls).isEqualTo(1)
         }
     }
 
@@ -312,5 +343,9 @@ private class FakeCustomAuthService(
         contentBase64: String,
     ): Result<AvatarUploadAcceptance> {
         return Result.failure(IllegalStateException("not used in this test"))
+    }
+
+    override suspend fun getLegalLinks(homeserverUrl: String): CustomAuthLegalLinks {
+        return defaultCustomAuthLegalLinks()
     }
 }

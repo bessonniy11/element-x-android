@@ -30,10 +30,6 @@ android {
 
     defaultConfig {
         buildConfigFieldStr(
-            name = "URL_COPYRIGHT",
-            value = BuildTimeConfig.URL_COPYRIGHT ?: "https://element.io/copyright",
-        )
-        buildConfigFieldStr(
             name = "URL_ACCEPTABLE_USE",
             value = BuildTimeConfig.URL_ACCEPTABLE_USE ?: "https://element.io/acceptable-use-policy-terms",
         )

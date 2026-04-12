@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.login.impl.R
+import io.element.android.features.login.impl.customauth.defaultCustomAuthLegalLinks
 import io.element.android.features.login.impl.customauth.RegistrationStartAcceptance
 import io.element.android.features.login.impl.screens.common.LegalLinksSection
 import io.element.android.libraries.architecture.AsyncData
@@ -68,6 +69,8 @@ fun RegistrationStartView(
     state: RegistrationStartState,
     onBackClick: () -> Unit,
     onSubmitSuccess: (RegistrationStartAcceptance, String, String) -> Unit,
+    privacyPolicyUrl: String = defaultCustomAuthLegalLinks().privacyPolicyUrl,
+    termsUrl: String = defaultCustomAuthLegalLinks().termsUrl,
     modifier: Modifier = Modifier,
 ) {
     val autofillManager = LocalAutofillManager.current
@@ -106,129 +109,139 @@ fun RegistrationStartView(
                 .imePadding()
                 .padding(padding)
                 .consumeWindowInsets(padding)
-                .verticalScroll(state = rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
         ) {
-            IconTitleSubtitleMolecule(
-                modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
-                iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
-                title = stringResource(id = R.string.screen_registration_start_title),
-                subTitle = stringResource(id = R.string.screen_registration_start_subtitle, state.accountProvider.title),
-            )
-            Spacer(Modifier.height(40.dp))
-
-            var loginFieldState by textFieldState(stateValue = state.login)
-            TextField(
-                label = stringResource(id = R.string.screen_registration_start_login_label),
-                value = loginFieldState,
-                enabled = !isLoading,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .onTabOrEnterKeyFocusNext(focusManager)
-                    .testTag(TestTags.loginEmailUsername)
-                    .semantics {
-                        contentType = ContentType.Username
-                    },
-                onValueChange = {
-                    val sanitized = it.sanitize()
-                    loginFieldState = sanitized
-                    eventSink(RegistrationStartEvents.SetLogin(sanitized))
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next,
-                ),
-                keyboardActions = KeyboardActions(onNext = {
-                    focusManager.moveFocus(FocusDirection.Down)
-                }),
-                supportingText = if (state.login.isNotBlank() && !state.isLoginValid) {
-                    stringResource(id = R.string.screen_registration_start_login_error)
-                } else {
-                    null
-                },
-                singleLine = true,
-                trailingIcon = if (loginFieldState.isNotEmpty()) {
-                    {
-                        Box(Modifier.clickable {
-                            loginFieldState = ""
-                            eventSink(RegistrationStartEvents.SetLogin(""))
-                        }) {
-                            Icon(
-                                imageVector = CompoundIcons.Close(),
-                                contentDescription = stringResource(CommonStrings.action_clear)
-                            )
-                        }
-                    }
-                } else {
-                    null
-                },
-            )
+                    .weight(1f)
+                    .verticalScroll(state = rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp),
+            ) {
+                IconTitleSubtitleMolecule(
+                    modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp),
+                    iconStyle = BigIcon.Style.Default(CompoundIcons.UserProfileSolid()),
+                    title = stringResource(id = R.string.screen_registration_start_title),
+                    subTitle = stringResource(id = R.string.screen_registration_start_subtitle, state.accountProvider.title),
+                )
+                Spacer(Modifier.height(40.dp))
 
-            Spacer(Modifier.height(20.dp))
-
-            var emailFieldState by textFieldState(stateValue = state.email)
-            TextField(
-                label = stringResource(id = R.string.screen_registration_start_email_label),
-                value = emailFieldState,
-                enabled = !isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onTabOrEnterKeyFocusNext(focusManager)
-                    .semantics {
-                        contentType = ContentType.EmailAddress
-                    },
-                onValueChange = {
-                    val sanitized = it.sanitize()
-                    emailFieldState = sanitized
-                    eventSink(RegistrationStartEvents.SetEmail(sanitized))
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Done,
-                ),
-                keyboardActions = KeyboardActions(onDone = {
-                    focusManager.clearFocus(force = true)
-                    eventSink(RegistrationStartEvents.Submit)
-                }),
-                supportingText = if (state.email.isNotBlank() && !state.isEmailValid) {
-                    stringResource(id = R.string.screen_registration_start_email_error)
-                } else {
-                    null
-                },
-                singleLine = true,
-                trailingIcon = if (emailFieldState.isNotEmpty()) {
-                    {
-                        Box(Modifier.clickable {
-                            emailFieldState = ""
-                            eventSink(RegistrationStartEvents.SetEmail(""))
-                        }) {
-                            Icon(
-                                imageVector = CompoundIcons.Close(),
-                                contentDescription = stringResource(CommonStrings.action_clear)
-                            )
-                        }
-                    }
-                } else {
-                    null
-                },
-            )
-
-            Spacer(Modifier.height(24.dp))
-            LegalLinksSection()
-            Spacer(Modifier.height(12.dp))
-            Spacer(modifier = Modifier.weight(1f))
-
-            ButtonColumnMolecule {
-                Button(
-                    text = stringResource(id = R.string.screen_registration_start_submit),
-                    showProgress = isLoading,
-                    onClick = { eventSink(RegistrationStartEvents.Submit) },
-                    enabled = state.submitEnabled,
+                var loginFieldState by textFieldState(stateValue = state.login)
+                TextField(
+                    label = stringResource(id = R.string.screen_registration_start_login_label),
+                    value = loginFieldState,
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag(TestTags.loginContinue)
+                        .onTabOrEnterKeyFocusNext(focusManager)
+                        .testTag(TestTags.loginEmailUsername)
+                        .semantics {
+                            contentType = ContentType.Username
+                        },
+                    onValueChange = {
+                        val sanitized = it.sanitize()
+                        loginFieldState = sanitized
+                        eventSink(RegistrationStartEvents.SetLogin(sanitized))
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next,
+                    ),
+                    keyboardActions = KeyboardActions(onNext = {
+                        focusManager.moveFocus(FocusDirection.Down)
+                    }),
+                    supportingText = if (state.login.isNotBlank() && !state.isLoginValid) {
+                        stringResource(id = R.string.screen_registration_start_login_error)
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    trailingIcon = if (loginFieldState.isNotEmpty()) {
+                        {
+                            Box(Modifier.clickable {
+                                loginFieldState = ""
+                                eventSink(RegistrationStartEvents.SetLogin(""))
+                            }) {
+                                Icon(
+                                    imageVector = CompoundIcons.Close(),
+                                    contentDescription = stringResource(CommonStrings.action_clear)
+                                )
+                            }
+                        }
+                    } else {
+                        null
+                    },
                 )
-                Spacer(modifier = Modifier.height(48.dp))
+
+                Spacer(Modifier.height(20.dp))
+
+                var emailFieldState by textFieldState(stateValue = state.email)
+                TextField(
+                    label = stringResource(id = R.string.screen_registration_start_email_label),
+                    value = emailFieldState,
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onTabOrEnterKeyFocusNext(focusManager)
+                        .semantics {
+                            contentType = ContentType.EmailAddress
+                        },
+                    onValueChange = {
+                        val sanitized = it.sanitize()
+                        emailFieldState = sanitized
+                        eventSink(RegistrationStartEvents.SetEmail(sanitized))
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        focusManager.clearFocus(force = true)
+                        eventSink(RegistrationStartEvents.Submit)
+                    }),
+                    supportingText = if (state.email.isNotBlank() && !state.isEmailValid) {
+                        stringResource(id = R.string.screen_registration_start_email_error)
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    trailingIcon = if (emailFieldState.isNotEmpty()) {
+                        {
+                            Box(Modifier.clickable {
+                                emailFieldState = ""
+                                eventSink(RegistrationStartEvents.SetEmail(""))
+                            }) {
+                                Icon(
+                                    imageVector = CompoundIcons.Close(),
+                                    contentDescription = stringResource(CommonStrings.action_clear)
+                                )
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 36.dp, end = 36.dp, bottom = 20.dp),
+            ) {
+                ButtonColumnMolecule {
+                    Button(
+                        text = stringResource(id = R.string.screen_registration_start_submit),
+                        showProgress = isLoading,
+                        onClick = { eventSink(RegistrationStartEvents.Submit) },
+                        enabled = state.submitEnabled,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(TestTags.loginContinue)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                LegalLinksSection(
+                    privacyPolicyUrl = privacyPolicyUrl,
+                    termsUrl = termsUrl,
+                )
             }
         }
 

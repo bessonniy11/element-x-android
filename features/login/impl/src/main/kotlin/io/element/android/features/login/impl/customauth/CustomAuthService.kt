@@ -67,7 +67,14 @@ interface CustomAuthService {
         phone: String,
         avatarUploadRef: String? = null,
     ): Result<ExternalSession>
+
+    suspend fun getLegalLinks(homeserverUrl: String): CustomAuthLegalLinks
 }
+
+data class CustomAuthLegalLinks(
+    val privacyPolicyUrl: String,
+    val termsUrl: String,
+)
 
 @Serializable
 data class PasswordResetAcceptance(
@@ -256,6 +263,21 @@ class DefaultCustomAuthService(
         )
     }
 
+    override suspend fun getLegalLinks(homeserverUrl: String): CustomAuthLegalLinks {
+        val fallback = defaultCustomAuthLegalLinks()
+        if (!isManagedHomeserver(homeserverUrl)) return fallback
+
+        val response = runCatching {
+            api.publicConfig(homeserver = homeserverUrl.ensureProtocol())
+        }.getOrNull()
+
+        val payload = response?.takeIf { it.isSuccessful }?.body()
+        return CustomAuthLegalLinks(
+            privacyPolicyUrl = payload?.privacyPolicyUrl?.sanitizeUrl() ?: fallback.privacyPolicyUrl,
+            termsUrl = payload?.termsUrl?.sanitizeUrl() ?: fallback.termsUrl,
+        )
+    }
+
     private fun normalizeHost(homeserverUrl: String): String? {
         val raw = homeserverUrl.trim()
         if (raw.isEmpty()) return null
@@ -271,9 +293,27 @@ class DefaultCustomAuthService(
         }
         return payload
     }
+
+    private fun String.sanitizeUrl(): String? {
+        val raw = trim()
+        if (raw.isEmpty()) return null
+        val withScheme = raw.ensureProtocol()
+        val parsedHost = runCatching { URI(withScheme).host }.getOrNull()
+        return if (parsedHost.isNullOrBlank()) null else withScheme
+    }
 }
 
 private interface CustomAuthApi {
+    @GET("/auth/public/config")
+    suspend fun publicConfig(
+        @Header("X-Client-Auth-Mode")
+        authMode: String = AuthenticationConfig.CUSTOM_AUTH_MODE,
+        @Header("X-Client-App")
+        clientApp: String = AuthenticationConfig.CUSTOM_AUTH_CLIENT_APP,
+        @Query("homeserver")
+        homeserver: String,
+    ): retrofit2.Response<PublicConfigResponse>
+
     @POST("/auth/login/password")
     suspend fun loginPassword(
         @Header("X-Client-Auth-Mode")
@@ -453,6 +493,14 @@ private data class RegistrationCompleteResponse(
     val deviceId: String,
 )
 
+@Serializable
+private data class PublicConfigResponse(
+    @SerialName("privacy_policy_url")
+    val privacyPolicyUrl: String? = null,
+    @SerialName("terms_url")
+    val termsUrl: String? = null,
+)
+
 sealed class CustomAuthException(
     message: String,
 ) : Exception(message) {
@@ -463,4 +511,11 @@ sealed class CustomAuthException(
     data class RegistrationStatusFailed(val statusCode: Int) : CustomAuthException("Custom auth registration status failed: $statusCode")
     data class RegistrationAvatarUploadFailed(val statusCode: Int) : CustomAuthException("Custom auth registration avatar upload failed: $statusCode")
     data class CompleteRegistrationFailed(val statusCode: Int) : CustomAuthException("Custom auth registration complete failed: $statusCode")
+}
+
+fun defaultCustomAuthLegalLinks(): CustomAuthLegalLinks {
+    return CustomAuthLegalLinks(
+        privacyPolicyUrl = AuthenticationConfig.CUSTOM_AUTH_PRIVACY_POLICY_URL,
+        termsUrl = AuthenticationConfig.CUSTOM_AUTH_TERMS_URL,
+    )
 }
