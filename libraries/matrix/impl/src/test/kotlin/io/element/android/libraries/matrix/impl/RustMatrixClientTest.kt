@@ -118,7 +118,7 @@ class RustMatrixClientTest {
     }
 
     @Test
-    fun `createDM overrides room history visibility to invited`() = runTest {
+    fun `createDM overrides room history visibility to shared`() = runTest {
         var createParameters: CreateRoomParameters? = null
         val createRoomLambda = lambdaRecorder<CreateRoomParameters, String> {
             createParameters = it
@@ -131,7 +131,7 @@ class RustMatrixClientTest {
         client.createDM(A_USER_ID)
 
         createRoomLambda.assertions().isCalledOnce()
-        assertThat(createParameters?.historyVisibilityOverride).isEqualTo(RoomHistoryVisibility.Invited)
+        assertThat(createParameters?.historyVisibilityOverride).isEqualTo(RoomHistoryVisibility.Shared)
     }
 
     private fun TestScope.createRustMatrixClient(

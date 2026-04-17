@@ -417,7 +417,7 @@ class RustMatrixClient(
             isDirect = true,
             visibility = RoomVisibility.Private,
             preset = RoomPreset.TRUSTED_PRIVATE_CHAT,
-            historyVisibilityOverride = RoomHistoryVisibility.Invited,
+            historyVisibilityOverride = RoomHistoryVisibility.Shared,
             invite = listOf(userId),
         )
         return createRoom(createRoomParams)

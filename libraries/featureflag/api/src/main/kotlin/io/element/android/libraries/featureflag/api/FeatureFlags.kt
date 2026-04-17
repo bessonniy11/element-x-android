@@ -60,7 +60,7 @@ enum class FeatureFlags(
             "\nRequires an app restart to take effect." +
             "\n\nWARNING: this feature is EXPERIMENTAL and not all security precautions are implemented." +
             " Do not enable on production accounts.",
-        defaultValue = { false },
+        defaultValue = { true },
         isFinished = false,
     ),
     Knock(

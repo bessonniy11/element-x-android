@@ -264,7 +264,7 @@ class ConfigureRoomPresenter(
                         isEncrypted = true,
                         isDirect = false,
                         visibility = RoomVisibility.Private,
-                        historyVisibilityOverride = RoomHistoryVisibility.Invited,
+                        historyVisibilityOverride = RoomHistoryVisibility.Shared,
                         joinRuleOverride = config.visibilityState.joinRuleItem.toJoinRule()
                             // No need to specify the Invite join rule override, since the preset is already PRIVATE_CHAT
                             .takeIf { it != JoinRule.Invite },
