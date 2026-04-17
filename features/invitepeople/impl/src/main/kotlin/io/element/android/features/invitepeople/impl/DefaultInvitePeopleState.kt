@@ -15,6 +15,7 @@ import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.theme.components.SearchBarResultState
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.permissions.api.PermissionsState
 import kotlinx.collections.immutable.ImmutableList
 
 data class DefaultInvitePeopleState(
@@ -26,6 +27,8 @@ data class DefaultInvitePeopleState(
     val selectedUsers: ImmutableList<MatrixUser>,
     override val isSearchActive: Boolean,
     override val sendInvitesAction: AsyncAction<Unit>,
+    val contactsPermissionState: PermissionsState,
+    val contacts: ImmutableList<InvitableUser>,
     val suggestions: ImmutableList<InvitableUser>,
     override val eventSink: (InvitePeopleEvents) -> Unit
 ) : InvitePeopleState

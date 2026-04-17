@@ -32,6 +32,7 @@ import io.element.android.libraries.designsystem.components.async.AsyncLoading
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
+import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
 import io.element.android.libraries.designsystem.theme.components.ListSectionHeader
 import io.element.android.libraries.designsystem.theme.components.SearchBar
@@ -43,6 +44,8 @@ import io.element.android.libraries.matrix.ui.components.CheckableUserRowData
 import io.element.android.libraries.matrix.ui.components.SelectedUsersRowList
 import io.element.android.libraries.matrix.ui.model.getAvatarData
 import io.element.android.libraries.matrix.ui.model.getBestName
+import io.element.android.libraries.permissions.api.PermissionsEvent
+import io.element.android.libraries.permissions.api.PermissionsView
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 
@@ -116,34 +119,97 @@ private fun InvitePeopleContentView(
                     contentPadding = PaddingValues(all = 16.dp),
                 )
             }
-            if (state.suggestions.isNotEmpty()) {
+            val shouldShowContactsSection = !state.contactsPermissionState.permissionGranted || state.contacts.isNotEmpty()
+            if (shouldShowContactsSection || state.suggestions.isNotEmpty()) {
                 LazyColumn {
-                    item {
-                        ListSectionHeader(
-                            title = stringResource(id = CommonStrings.common_suggestions),
-                            hasDivider = false,
-                        )
+                    if (!state.contactsPermissionState.permissionGranted) {
+                        item {
+                            ListSectionHeader(
+                                title = stringResource(R.string.screen_invite_users_contacts_title),
+                                hasDivider = false,
+                            )
+                        }
+                        item {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.screen_invite_users_contacts_permission_message),
+                                    style = ElementTheme.typography.fontBodyMdRegular,
+                                )
+                                Button(
+                                    text = stringResource(R.string.screen_invite_users_contacts_permission_cta),
+                                    onClick = {
+                                        state.contactsPermissionState.eventSink(PermissionsEvent.RequestPermissions)
+                                    },
+                                )
+                            }
+                        }
+                    } else if (state.contacts.isNotEmpty()) {
+                        item {
+                            ListSectionHeader(
+                                title = stringResource(R.string.screen_invite_users_contacts_title),
+                                hasDivider = false,
+                            )
+                        }
+                        itemsIndexed(state.contacts) { index, invitableUser ->
+                            InvitePeopleInvitableUserRow(
+                                invitableUser = invitableUser,
+                                onToggleUser = ::toggleUser,
+                            )
+                            if (index < state.contacts.lastIndex) {
+                                HorizontalDivider()
+                            }
+                        }
                     }
-                    itemsIndexed(state.suggestions) { index, invitableUser ->
-                        CheckableUserRow(
-                            checked = invitableUser.isSelected,
-                            onCheckedChange = {
-                                state.eventSink(DefaultInvitePeopleEvents.ToggleUser(invitableUser.matrixUser))
-                            },
-                            data = CheckableUserRowData.Resolved(
-                                avatarData = invitableUser.matrixUser.getAvatarData(AvatarSize.UserListItem),
-                                name = invitableUser.matrixUser.getBestName(),
-                                subtext = invitableUser.matrixUser.userId.value,
-                            ),
-                        )
-                        if (index < state.suggestions.lastIndex) {
-                            HorizontalDivider()
+
+                    if (state.suggestions.isNotEmpty()) {
+                        item {
+                            ListSectionHeader(
+                                title = stringResource(id = CommonStrings.common_suggestions),
+                                hasDivider = false,
+                            )
+                        }
+                        itemsIndexed(state.suggestions) { index, invitableUser ->
+                            InvitePeopleInvitableUserRow(
+                                invitableUser = invitableUser,
+                                onToggleUser = ::toggleUser,
+                            )
+                            if (index < state.suggestions.lastIndex) {
+                                HorizontalDivider()
+                            }
                         }
                     }
                 }
             }
         }
+
+        PermissionsView(state = state.contactsPermissionState)
     }
+}
+
+@Composable
+private fun InvitePeopleInvitableUserRow(
+    invitableUser: InvitableUser,
+    onToggleUser: (MatrixUser) -> Unit,
+) {
+    val invitedOrJoined = invitableUser.isAlreadyInvited || invitableUser.isAlreadyJoined
+    val enabled = !invitedOrJoined
+    CheckableUserRow(
+        checked = invitableUser.isSelected || invitedOrJoined,
+        enabled = enabled,
+        onCheckedChange = { onToggleUser(invitableUser.matrixUser) },
+        data = CheckableUserRowData.Resolved(
+            avatarData = invitableUser.matrixUser.getAvatarData(AvatarSize.UserListItem),
+            name = invitableUser.matrixUser.getBestName(),
+            subtext = when {
+                invitableUser.isAlreadyJoined -> stringResource(R.string.screen_invite_users_already_a_member)
+                invitableUser.isAlreadyInvited -> stringResource(R.string.screen_invite_users_already_invited)
+                else -> invitableUser.matrixUser.userId.value
+            },
+        ),
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

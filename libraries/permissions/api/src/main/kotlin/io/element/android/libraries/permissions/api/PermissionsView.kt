@@ -49,6 +49,7 @@ private fun String.toDialogContent(): String {
         Manifest.permission.POST_NOTIFICATIONS -> stringResource(id = R.string.dialog_permission_notification)
         Manifest.permission.CAMERA -> stringResource(id = R.string.dialog_permission_camera)
         Manifest.permission.RECORD_AUDIO -> stringResource(id = R.string.dialog_permission_microphone)
+        Manifest.permission.READ_CONTACTS -> stringResource(id = R.string.dialog_permission_contacts)
         else -> stringResource(id = R.string.dialog_permission_generic)
     }
 }

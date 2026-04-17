@@ -8,6 +8,7 @@
 
 package io.element.android.features.invitepeople.impl
 
+import android.Manifest
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.libraries.architecture.AsyncAction
@@ -16,6 +17,8 @@ import io.element.android.libraries.designsystem.theme.components.SearchBarResul
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.components.aMatrixUser
 import io.element.android.libraries.matrix.ui.components.aMatrixUserList
+import io.element.android.libraries.permissions.api.PermissionsState
+import io.element.android.libraries.permissions.api.aPermissionsState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -102,6 +105,14 @@ private fun aDefaultInvitePeopleState(
     isSearchActive: Boolean = false,
     showSearchLoader: Boolean = false,
     sendInvitesAction: AsyncAction<Unit> = AsyncAction.Uninitialized,
+    contactsPermissionState: PermissionsState = aPermissionsState(
+        showDialog = false,
+        permission = Manifest.permission.READ_CONTACTS,
+        permissionGranted = true,
+    ),
+    contacts: List<InvitableUser> = aMatrixUserList()
+        .take(5)
+        .map { user -> anInvitableUser(matrixUser = user, isSelected = user in selectedUsers) },
     suggestions: List<InvitableUser> = aMatrixUserList()
         .take(5)
         .map { user -> anInvitableUser(matrixUser = user, isSelected = user in selectedUsers) },
@@ -115,6 +126,8 @@ private fun aDefaultInvitePeopleState(
         isSearchActive = isSearchActive,
         showSearchLoader = showSearchLoader,
         sendInvitesAction = sendInvitesAction,
+        contactsPermissionState = contactsPermissionState,
+        contacts = contacts.toImmutableList(),
         suggestions = suggestions.toImmutableList(),
         eventSink = {},
     )

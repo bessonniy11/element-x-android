@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import io.element.android.features.announcement.api.Announcement
 import io.element.android.features.announcement.api.AnnouncementService
+import io.element.android.features.home.impl.contacts.HomeContactsState
 import io.element.android.features.home.impl.roomlist.RoomListState
 import io.element.android.features.home.impl.spaces.HomeSpacesState
 import io.element.android.features.logout.api.direct.DirectLogoutState
@@ -43,6 +44,7 @@ class HomePresenter(
     private val snackbarDispatcher: SnackbarDispatcher,
     private val indicatorService: IndicatorService,
     private val roomListPresenter: Presenter<RoomListState>,
+    private val homeContactsPresenter: Presenter<HomeContactsState>,
     private val homeSpacesPresenter: Presenter<HomeSpacesState>,
     private val logoutPresenter: Presenter<DirectLogoutState>,
     private val rageshakeFeatureAvailability: RageshakeFeatureAvailability,
@@ -65,6 +67,7 @@ class HomePresenter(
         val isOnline by syncService.isOnline.collectAsState()
         val canReportBug by remember { rageshakeFeatureAvailability.isAvailable() }.collectAsState(false)
         val roomListState = roomListPresenter.present()
+        val homeContactsState = homeContactsPresenter.present()
         val homeSpacesState = homeSpacesPresenter.present()
         var currentHomeNavigationBarItemOrdinal by rememberSaveable { mutableIntStateOf(HomeNavigationBarItem.Chats.ordinal) }
         val currentHomeNavigationBarItem by remember {
@@ -94,9 +97,13 @@ class HomePresenter(
             }
         }
 
-        LaunchedEffect(homeSpacesState.canCreateSpaces, homeSpacesState.spaceRooms.isEmpty()) {
-            // If the flag to create spaces is disabled and the last space is left, ensure that the Chat view is rendered.
-            if (!homeSpacesState.canCreateSpaces && homeSpacesState.spaceRooms.isEmpty()) {
+        LaunchedEffect(homeSpacesState.canCreateSpaces, homeSpacesState.spaceRooms.isEmpty(), currentHomeNavigationBarItem) {
+            // If the Spaces tab becomes unavailable while it's selected, fallback to Chats.
+            if (
+                currentHomeNavigationBarItem == HomeNavigationBarItem.Spaces &&
+                !homeSpacesState.canCreateSpaces &&
+                homeSpacesState.spaceRooms.isEmpty()
+            ) {
                 currentHomeNavigationBarItemOrdinal = HomeNavigationBarItem.Chats.ordinal
             }
         }
@@ -107,6 +114,7 @@ class HomePresenter(
             hasNetworkConnection = isOnline,
             currentHomeNavigationBarItem = currentHomeNavigationBarItem,
             roomListState = roomListState,
+            homeContactsState = homeContactsState,
             homeSpacesState = homeSpacesState,
             snackbarMessage = snackbarMessage,
             canReportBug = canReportBug,

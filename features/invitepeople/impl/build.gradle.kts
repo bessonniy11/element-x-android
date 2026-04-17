@@ -34,6 +34,7 @@ dependencies {
     implementation(projects.libraries.designsystem)
     implementation(projects.libraries.uiStrings)
     implementation(projects.libraries.androidutils)
+    implementation(projects.libraries.permissions.api)
     implementation(projects.libraries.usersearch.impl)
     implementation(libs.coil.compose)
     implementation(projects.services.apperror.api)
@@ -41,6 +42,7 @@ dependencies {
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.permissions.test)
     testImplementation(projects.libraries.usersearch.test)
     testImplementation(projects.services.apperror.test)
 }

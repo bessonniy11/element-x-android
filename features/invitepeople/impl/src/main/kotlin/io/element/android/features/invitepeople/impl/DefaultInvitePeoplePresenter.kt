@@ -8,6 +8,7 @@
 
 package io.element.android.features.invitepeople.impl
 
+import android.Manifest
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
@@ -44,7 +45,10 @@ import io.element.android.libraries.matrix.api.room.RoomMembershipState
 import io.element.android.libraries.matrix.api.room.filterMembers
 import io.element.android.libraries.matrix.api.room.recent.getRecentDirectRooms
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.permissions.api.PermissionsEvent
+import io.element.android.libraries.permissions.api.PermissionsPresenter
 import io.element.android.libraries.ui.strings.CommonStrings
+import io.element.android.libraries.usersearch.api.PhonebookMatrixContactsProvider
 import io.element.android.libraries.usersearch.api.UserRepository
 import io.element.android.services.apperror.api.AppErrorStateService
 import kotlinx.collections.immutable.ImmutableList
@@ -69,13 +73,17 @@ class DefaultInvitePeoplePresenter(
     private val coroutineDispatchers: CoroutineDispatchers,
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val appErrorStateService: AppErrorStateService,
+    private val phonebookMatrixContactsProvider: PhonebookMatrixContactsProvider,
     private val matrixClient: MatrixClient,
+    permissionsPresenterFactory: PermissionsPresenter.Factory,
 ) : InvitePeoplePresenter {
     @AssistedFactory
     @ContributesBinding(SessionScope::class)
     interface Factory : InvitePeoplePresenter.Factory {
         override fun create(joinedRoom: JoinedRoom?, roomId: RoomId): DefaultInvitePeoplePresenter
     }
+
+    private val contactsPermissionPresenter = permissionsPresenterFactory.create(Manifest.permission.READ_CONTACTS)
 
     @Composable
     override fun present(): InvitePeopleState {
@@ -84,8 +92,10 @@ class DefaultInvitePeoplePresenter(
         val searchResults = remember { mutableStateOf<SearchBarResultState<ImmutableList<InvitableUser>>>(SearchBarResultState.Initial()) }
         val queryState = rememberTextFieldState()
         var searchActive by rememberSaveable { mutableStateOf(false) }
+        var didAutoRequestContactsPermission by rememberSaveable { mutableStateOf(false) }
         val showSearchLoader = rememberSaveable { mutableStateOf(false) }
         val sendInvitesAction = remember { mutableStateOf<AsyncAction<Unit>>(AsyncAction.Uninitialized) }
+        val contactsPermissionState = contactsPermissionPresenter.present()
 
         val recentDirectRooms by produceState(emptyList(), roomMembers.value) {
             if (roomMembers.value.isSuccess()) {
@@ -97,6 +107,27 @@ class DefaultInvitePeoplePresenter(
                     .filterNot { it.matrixUser.userId in activeMemberIds }
                     .take(MAX_SUGGESTIONS_COUNT)
                     .toList()
+            }
+        }
+
+        LaunchedEffect(contactsPermissionState.permissionGranted, didAutoRequestContactsPermission) {
+            if (!contactsPermissionState.permissionGranted && !didAutoRequestContactsPermission) {
+                didAutoRequestContactsPermission = true
+                contactsPermissionState.eventSink(PermissionsEvent.RequestPermissions)
+            }
+        }
+
+        val mappedContacts by produceState<ImmutableList<MatrixUser>>(persistentListOf(), contactsPermissionState.permissionGranted) {
+            if (!contactsPermissionState.permissionGranted) {
+                value = persistentListOf()
+                return@produceState
+            }
+            value = runCatching {
+                phonebookMatrixContactsProvider
+                    .getMappedMatrixContacts()
+                    .toImmutableList()
+            }.getOrElse {
+                persistentListOf()
             }
         }
 
@@ -112,6 +143,19 @@ class DefaultInvitePeoplePresenter(
                         isUnresolved = false,
                     )
                 }.toImmutableList()
+            }
+        }
+
+        val contacts by remember {
+            derivedStateOf {
+                val existingMembers = roomMembers.value.dataOrNull().orEmpty()
+                mappedContacts.map { user ->
+                    user.takeIf { it.userId != matrixClient.sessionId }?.toInvitableUser(
+                        selectedUsers = selectedUsers.value,
+                        existingMembers = existingMembers,
+                        isUnresolved = false,
+                    )
+                }.filterNotNull().toImmutableList()
             }
         }
 
@@ -177,6 +221,8 @@ class DefaultInvitePeoplePresenter(
             searchResults = searchResults.value,
             showSearchLoader = showSearchLoader.value,
             sendInvitesAction = sendInvitesAction.value,
+            contactsPermissionState = contactsPermissionState,
+            contacts = contacts,
             suggestions = suggestions,
             eventSink = ::handleEvent,
         )
@@ -245,14 +291,9 @@ class DefaultInvitePeoplePresenter(
                 state.results.isEmpty() && state.isSearching -> SearchBarResultState.Initial()
                 state.results.isEmpty() && !state.isSearching -> SearchBarResultState.NoResultsFound()
                 else -> SearchBarResultState.Results(state.results.map { result ->
-                    val existingMembership = joinedMembers.firstOrNull { j -> j.userId == result.matrixUser.userId }?.membership
-                    val isJoined = existingMembership == RoomMembershipState.JOIN
-                    val isInvited = existingMembership == RoomMembershipState.INVITE
-                    InvitableUser(
-                        matrixUser = result.matrixUser,
-                        isSelected = selectedUsers.value.contains(result.matrixUser),
-                        isAlreadyJoined = isJoined,
-                        isAlreadyInvited = isInvited,
+                    result.matrixUser.toInvitableUser(
+                        selectedUsers = selectedUsers.value,
+                        existingMembers = joinedMembers,
                         isUnresolved = result.isUnresolved,
                     )
                 }.toImmutableList())
@@ -267,5 +308,20 @@ class DefaultInvitePeoplePresenter(
         suspend {
             room.filterMembers("", coroutineDispatchers.io).toImmutableList()
         }.runCatchingUpdatingState(roomMembers)
+    }
+
+    private fun MatrixUser.toInvitableUser(
+        selectedUsers: ImmutableList<MatrixUser>,
+        existingMembers: List<RoomMember>,
+        isUnresolved: Boolean,
+    ): InvitableUser {
+        val existingMembership = existingMembers.firstOrNull { it.userId == userId }?.membership
+        return InvitableUser(
+            matrixUser = this,
+            isSelected = selectedUsers.any { it.userId == userId },
+            isAlreadyJoined = existingMembership == RoomMembershipState.JOIN,
+            isAlreadyInvited = existingMembership == RoomMembershipState.INVITE,
+            isUnresolved = isUnresolved,
+        )
     }
 }

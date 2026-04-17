@@ -9,6 +9,8 @@
 package io.element.android.features.home.impl
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Parcelable
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
@@ -56,6 +58,7 @@ import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -154,6 +157,38 @@ class HomeFlowNode(
         }
     }
 
+    private fun onInviteContactClick(activity: Activity, phoneNumber: String) {
+        val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("smsto:${Uri.encode(phoneNumber)}")
+        }
+        runCatchingExceptions {
+            activity.startActivity(smsIntent)
+        }.onFailure {
+            inviteFriendsUseCase.execute(activity)
+        }
+    }
+
+    private fun onCallContactClick(activity: Activity, phoneNumber: String) {
+        val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+            data = Uri.parse("tel:${Uri.encode(phoneNumber)}")
+        }
+        runCatchingExceptions {
+            activity.startActivity(dialIntent)
+        }
+    }
+
+    private fun onMessageContactClick(userId: UserId, navigateToRoom: (RoomId) -> Unit) {
+        sessionCoroutineScope.launch {
+            runCatchingExceptions {
+                matrixClient.createDM(userId).getOrThrow()
+            }.onSuccess { roomId ->
+                navigateToRoom(roomId)
+            }.onFailure { error ->
+                Timber.w(error, "Cannot create DM for $userId")
+            }
+        }
+    }
+
     private fun navigateToSelectNewOwnersWhenLeavingRoom(roomId: RoomId) {
         backstack.push(NavTarget.SelectNewOwnersWhenLeavingRoom(roomId))
     }
@@ -225,6 +260,9 @@ class HomeFlowNode(
                 onConfirmRecoveryKeyClick = callback::navigateToEnterRecoveryKey,
                 onRoomSettingsClick = callback::navigateToRoomSettings,
                 onMenuActionClick = { onMenuActionClick(activity, it) },
+                onInviteContactClick = { onInviteContactClick(activity, it) },
+                onCallContactClick = { onCallContactClick(activity, it) },
+                onMessageContactClick = { onMessageContactClick(it, ::navigateToRoom) },
                 onReportRoomClick = ::navigateToReportRoom,
                 onDeclineInviteAndBlockUser = ::navigateToDeclineInviteAndBlockUser,
                 modifier = modifier,

@@ -15,7 +15,12 @@
   <string name="full_screen_intent_banner_message">"Чтобы больше не пропускать важные звонки, разрешите приложению показывать полноэкранные уведомления на заблокированном экране телефона."</string>
   <string name="full_screen_intent_banner_title">"Улучшите качество звонков"</string>
   <string name="screen_home_tab_chats">"Все чаты"</string>
+  <string name="screen_home_tab_contacts">"Контакты"</string>
   <string name="screen_home_tab_spaces">"Папки"</string>
+  <string name="screen_contacts_permission_message">"Разрешите доступ к контактам, чтобы показать телефонную книгу и найти контакты в Matrix."</string>
+  <string name="screen_contacts_permission_cta">"Разрешить доступ к контактам"</string>
+  <string name="screen_contacts_empty_title">"Контакты не найдены"</string>
+  <string name="screen_contacts_has_app_badge">"Есть в Element X"</string>
   <string name="screen_invites_decline_chat_message">"Вы уверены, что хотите отклонить приглашение в %1$s?"</string>
   <string name="screen_invites_decline_chat_title">"Отклонить приглашение"</string>
   <string name="screen_invites_decline_direct_chat_message">"Вы уверены, что хотите отказаться от личного общения с %1$s?"</string>

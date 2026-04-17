@@ -11,6 +11,8 @@ package io.element.android.features.home.impl
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.announcement.api.Announcement
 import io.element.android.features.announcement.api.AnnouncementService
+import io.element.android.features.home.impl.contacts.HomeContactsState
+import io.element.android.features.home.impl.contacts.aHomeContactsState
 import io.element.android.features.home.impl.roomlist.aRoomListState
 import io.element.android.features.home.impl.spaces.HomeSpacesState
 import io.element.android.features.home.impl.spaces.aHomeSpacesState
@@ -160,7 +162,7 @@ class HomePresenterTest {
     }
 
     @Test
-    fun `present - NavigationBar is hidden when the last space is left when the user can't create new spaces`() = runTest {
+    fun `present - NavigationBar keeps contacts when the last space is left and user cannot create new spaces`() = runTest {
         val homeSpacesPresenter = MutablePresenter(aHomeSpacesState())
         val presenter = createHomePresenter(
             sessionStore = InMemorySessionStore(
@@ -185,7 +187,11 @@ class HomePresenterTest {
             val finalState = awaitItem()
             // We are back to Chats
             assertThat(finalState.currentHomeNavigationBarItem).isEqualTo(HomeNavigationBarItem.Chats)
-            assertThat(finalState.showNavigationBar).isFalse()
+            assertThat(finalState.showNavigationBar).isTrue()
+            assertThat(finalState.availableNavigationItems).containsExactly(
+                HomeNavigationBarItem.Chats,
+                HomeNavigationBarItem.Contacts,
+            ).inOrder()
         }
     }
 }
@@ -196,6 +202,7 @@ internal fun createHomePresenter(
     snackbarDispatcher: SnackbarDispatcher = SnackbarDispatcher(),
     rageshakeFeatureAvailability: RageshakeFeatureAvailability = RageshakeFeatureAvailability { flowOf(false) },
     indicatorService: IndicatorService = FakeIndicatorService(),
+    homeContactsPresenter: Presenter<HomeContactsState> = Presenter { aHomeContactsState() },
     homeSpacesPresenter: Presenter<HomeSpacesState> = Presenter { aHomeSpacesState() },
     sessionStore: SessionStore = InMemorySessionStore(),
     announcementService: AnnouncementService = FakeAnnouncementService(),
@@ -205,6 +212,7 @@ internal fun createHomePresenter(
     snackbarDispatcher = snackbarDispatcher,
     indicatorService = indicatorService,
     roomListPresenter = { aRoomListState() },
+    homeContactsPresenter = homeContactsPresenter,
     homeSpacesPresenter = homeSpacesPresenter,
     logoutPresenter = { aDirectLogoutState() },
     rageshakeFeatureAvailability = rageshakeFeatureAvailability,

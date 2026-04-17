@@ -24,6 +24,7 @@ import io.element.android.features.home.impl.components.RoomListMenuAction
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.model.RoomSummaryDisplayType
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EnsureNeverCalledWithParam
@@ -273,6 +274,9 @@ private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setRoomL
     onSetUpRecoveryClick: () -> Unit = EnsureNeverCalled(),
     onConfirmRecoveryKeyClick: () -> Unit = EnsureNeverCalled(),
     onCreateRoomClick: () -> Unit = EnsureNeverCalled(),
+    onInviteContactClick: (String) -> Unit = EnsureNeverCalledWithParam(),
+    onCallContactClick: (String) -> Unit = EnsureNeverCalledWithParam(),
+    onMessageContactClick: (UserId) -> Unit = EnsureNeverCalledWithParam(),
     onCreateSpaceClick: () -> Unit = EnsureNeverCalled(),
     onRoomSettingsClick: (RoomId) -> Unit = EnsureNeverCalledWithParam(),
     onMenuActionClick: (RoomListMenuAction) -> Unit = EnsureNeverCalledWithParam(),
@@ -287,6 +291,9 @@ private fun <R : TestRule> AndroidComposeTestRule<R, ComponentActivity>.setRoomL
             onSetUpRecoveryClick = onSetUpRecoveryClick,
             onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onStartChatClick = onCreateRoomClick,
+            onInviteContactClick = onInviteContactClick,
+            onCallContactClick = onCallContactClick,
+            onMessageContactClick = onMessageContactClick,
             onCreateSpaceClick = onCreateSpaceClick,
             onRoomSettingsClick = onRoomSettingsClick,
             onMenuActionClick = onMenuActionClick,

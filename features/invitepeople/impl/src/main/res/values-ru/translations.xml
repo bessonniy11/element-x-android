@@ -2,4 +2,7 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
   <string name="screen_invite_users_already_a_member">"Уже зарегистрирован"</string>
   <string name="screen_invite_users_already_invited">"Уже приглашены"</string>
+  <string name="screen_invite_users_contacts_title">"Контакты"</string>
+  <string name="screen_invite_users_contacts_permission_message">"Разрешите доступ к контактам, чтобы приглашать людей из телефонной книги."</string>
+  <string name="screen_invite_users_contacts_permission_cta">"Разрешить доступ к контактам"</string>
 </resources>

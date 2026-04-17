@@ -8,6 +8,7 @@
 
 package io.element.android.features.home.impl
 
+import io.element.android.features.home.impl.contacts.HomeContactsState
 import io.element.android.features.home.impl.roomlist.RoomListState
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
 import io.element.android.features.home.impl.spaces.HomeSpacesState
@@ -15,6 +16,7 @@ import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 
 data class HomeState(
     /**
@@ -26,6 +28,7 @@ data class HomeState(
     val hasNetworkConnection: Boolean,
     val currentHomeNavigationBarItem: HomeNavigationBarItem,
     val roomListState: RoomListState,
+    val homeContactsState: HomeContactsState,
     val homeSpacesState: HomeSpacesState,
     val snackbarMessage: SnackbarMessage?,
     val canReportBug: Boolean,
@@ -34,5 +37,13 @@ data class HomeState(
 ) {
     val isBackHandlerEnabled = currentHomeNavigationBarItem != HomeNavigationBarItem.Chats || roomListState.spaceFiltersState is SpaceFiltersState.Selected
     val displayRoomListFilters = currentHomeNavigationBarItem == HomeNavigationBarItem.Chats && roomListState.displayFilters
-    val showNavigationBar = homeSpacesState.canCreateSpaces || homeSpacesState.spaceRooms.isNotEmpty()
+    val availableNavigationItems: ImmutableList<HomeNavigationBarItem>
+        get() = buildList {
+            add(HomeNavigationBarItem.Chats)
+            if (homeSpacesState.canCreateSpaces || homeSpacesState.spaceRooms.isNotEmpty()) {
+                add(HomeNavigationBarItem.Spaces)
+            }
+            add(HomeNavigationBarItem.Contacts)
+        }.toImmutableList()
+    val showNavigationBar = availableNavigationItems.size > 1
 }

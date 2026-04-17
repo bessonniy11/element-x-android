@@ -113,6 +113,7 @@ fun HomeTopBar(
                             else -> stringResource(selectedNavigationItem.labelRes)
                         }
                     }
+                    HomeNavigationBarItem.Contacts -> stringResource(selectedNavigationItem.labelRes)
                     HomeNavigationBarItem.Spaces -> stringResource(selectedNavigationItem.labelRes)
                 }
                 Text(

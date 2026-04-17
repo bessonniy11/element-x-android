@@ -2,4 +2,7 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
   <string name="screen_invite_users_already_a_member">"Already a member"</string>
   <string name="screen_invite_users_already_invited">"Already invited"</string>
+  <string name="screen_invite_users_contacts_title">"Contacts"</string>
+  <string name="screen_invite_users_contacts_permission_message">"Allow contacts access to invite people from your phonebook."</string>
+  <string name="screen_invite_users_contacts_permission_cta">"Allow contacts access"</string>
 </resources>

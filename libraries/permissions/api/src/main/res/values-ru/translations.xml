@@ -4,4 +4,5 @@
   <string name="dialog_permission_generic">"Пожалуйста, предоставьте разрешение в системных настройках."</string>
   <string name="dialog_permission_microphone">"Чтобы приложение могло использовать микрофон, предоставьте разрешение в системных настройках."</string>
   <string name="dialog_permission_notification">"Чтобы приложение отображало уведомления, предоставьте разрешение в системных настройках."</string>
+  <string name="dialog_permission_contacts">"Чтобы приложение могло получить доступ к контактам, предоставьте разрешение в системных настройках."</string>
 </resources>

@@ -26,6 +26,7 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -46,6 +47,8 @@ import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.home.impl.components.HomeTopBar
 import io.element.android.features.home.impl.components.RoomListContentView
 import io.element.android.features.home.impl.components.RoomListMenuAction
+import io.element.android.features.home.impl.contacts.HomeContactsEvents
+import io.element.android.features.home.impl.contacts.HomeContactsView
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.roomlist.RoomListContextMenu
 import io.element.android.features.home.impl.roomlist.RoomListDeclineInviteMenu
@@ -68,7 +71,9 @@ import io.element.android.libraries.designsystem.theme.components.Scaffold
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarHost
 import io.element.android.libraries.designsystem.utils.snackbar.rememberSnackbarHostState
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.ui.strings.CommonStrings
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 
 @Composable
@@ -79,6 +84,9 @@ fun HomeView(
     onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onStartChatClick: () -> Unit,
+    onInviteContactClick: (String) -> Unit,
+    onCallContactClick: (String) -> Unit,
+    onMessageContactClick: (UserId) -> Unit,
     onCreateSpaceClick: () -> Unit,
     onRoomSettingsClick: (roomId: RoomId) -> Unit,
     onMenuActionClick: (RoomListMenuAction) -> Unit,
@@ -119,6 +127,9 @@ fun HomeView(
             onRoomClick = { if (firstThrottler.canHandle()) onRoomClick(it) },
             onOpenSettings = { if (firstThrottler.canHandle()) onSettingsClick() },
             onStartChatClick = { if (firstThrottler.canHandle()) onStartChatClick() },
+            onInviteContactClick = { if (firstThrottler.canHandle()) onInviteContactClick(it) },
+            onCallContactClick = { if (firstThrottler.canHandle()) onCallContactClick(it) },
+            onMessageContactClick = { if (firstThrottler.canHandle()) onMessageContactClick(it) },
             onCreateSpaceClick = { if (firstThrottler.canHandle()) onCreateSpaceClick() },
             onMenuActionClick = onMenuActionClick,
         )
@@ -145,6 +156,9 @@ private fun HomeScaffold(
     onRoomClick: (RoomId) -> Unit,
     onOpenSettings: () -> Unit,
     onStartChatClick: () -> Unit,
+    onInviteContactClick: (String) -> Unit,
+    onCallContactClick: (String) -> Unit,
+    onMessageContactClick: (UserId) -> Unit,
     onCreateSpaceClick: () -> Unit,
     onMenuActionClick: (RoomListMenuAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -171,7 +185,14 @@ private fun HomeScaffold(
 
     val hazeState = rememberHazeState()
     val roomsLazyListState = rememberLazyListState()
+    val contactsLazyListState = rememberLazyListState()
     val spacesLazyListState = rememberLazyListState()
+
+    LaunchedEffect(state.currentHomeNavigationBarItem) {
+        if (state.currentHomeNavigationBarItem == HomeNavigationBarItem.Contacts) {
+            state.homeContactsState.eventSink(HomeContactsEvents.ScreenOpened)
+        }
+    }
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -203,11 +224,13 @@ private fun HomeScaffold(
                 val coroutineScope = rememberCoroutineScope()
                 HomeBottomBar(
                     currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
+                    navigationItems = state.availableNavigationItems,
                     onItemClick = { item ->
                         // scroll to top if selecting the same item
                         if (item == state.currentHomeNavigationBarItem) {
                             val lazyListStateTarget = when (item) {
                                 HomeNavigationBarItem.Chats -> roomsLazyListState
+                                HomeNavigationBarItem.Contacts -> contactsLazyListState
                                 HomeNavigationBarItem.Spaces -> spacesLazyListState
                             }
                             coroutineScope.launch {
@@ -228,6 +251,7 @@ private fun HomeScaffold(
                                 HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
                             }
                         }
+                        HomeNavigationBarItem.Contacts -> null
                         HomeNavigationBarItem.Spaces -> if (state.homeSpacesState.canCreateSpaces) {
                             {
                                 HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
@@ -276,6 +300,21 @@ private fun HomeScaffold(
                     )
                     SpaceFiltersView(roomListState.spaceFiltersState)
                 }
+                HomeNavigationBarItem.Contacts -> {
+                    HomeContactsView(
+                        state = state.homeContactsState,
+                        lazyListState = contactsLazyListState,
+                        contentPadding = contentPadding,
+                        onInviteClick = onInviteContactClick,
+                        onCallClick = onCallContactClick,
+                        onMessageClick = onMessageContactClick,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .consumeWindowInsets(padding)
+                            .hazeSource(state = hazeState),
+                    )
+                }
                 HomeNavigationBarItem.Spaces -> {
                     HomeSpacesView(
                         modifier = Modifier
@@ -318,6 +357,7 @@ private fun HomeFloatingActionButton(
 @Composable
 private fun HomeBottomBar(
     currentHomeNavigationBarItem: HomeNavigationBarItem,
+    navigationItems: ImmutableList<HomeNavigationBarItem>,
     onItemClick: (HomeNavigationBarItem) -> Unit,
     modifier: Modifier = Modifier,
     floatingActionButton: (@Composable () -> Unit)?,
@@ -327,7 +367,7 @@ private fun HomeBottomBar(
         modifier = modifier
             .zIndex(1f),
     ) {
-        HomeNavigationBarItem.entries.forEachIndexed { index, item ->
+        navigationItems.forEachIndexed { index, item ->
             if (index > 0) {
                 HorizontalFloatingToolbarSeparator()
             }
@@ -354,6 +394,9 @@ internal fun HomeViewPreview(@PreviewParameter(HomeStateProvider::class) state: 
         onSetUpRecoveryClick = {},
         onConfirmRecoveryKeyClick = {},
         onStartChatClick = {},
+        onInviteContactClick = {},
+        onCallContactClick = {},
+        onMessageContactClick = {},
         onCreateSpaceClick = {},
         onRoomSettingsClick = {},
         onReportRoomClick = {},
@@ -374,6 +417,9 @@ internal fun HomeViewA11yPreview() = ElementPreview {
         onSetUpRecoveryClick = {},
         onConfirmRecoveryKeyClick = {},
         onStartChatClick = {},
+        onInviteContactClick = {},
+        onCallContactClick = {},
+        onMessageContactClick = {},
         onCreateSpaceClick = {},
         onRoomSettingsClick = {},
         onReportRoomClick = {},

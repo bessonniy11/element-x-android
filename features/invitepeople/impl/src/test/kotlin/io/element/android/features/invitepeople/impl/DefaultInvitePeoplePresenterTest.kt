@@ -8,6 +8,7 @@
 
 package io.element.android.features.invitepeople.impl
 
+import android.Manifest
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
@@ -35,7 +36,11 @@ import io.element.android.libraries.matrix.test.room.aRoomMember
 import io.element.android.libraries.matrix.test.room.aRoomMemberList
 import io.element.android.libraries.matrix.ui.components.aMatrixUser
 import io.element.android.libraries.matrix.ui.components.aMatrixUserList
+import io.element.android.libraries.permissions.api.aPermissionsState
+import io.element.android.libraries.permissions.test.FakePermissionsPresenter
+import io.element.android.libraries.permissions.test.FakePermissionsPresenterFactory
 import io.element.android.libraries.ui.strings.CommonStrings
+import io.element.android.libraries.usersearch.api.PhonebookMatrixContactsProvider
 import io.element.android.libraries.usersearch.api.UserRepository
 import io.element.android.libraries.usersearch.api.UserSearchResult
 import io.element.android.libraries.usersearch.api.UserSearchResultState
@@ -605,6 +610,71 @@ internal class DefaultInvitePeoplePresenterTest {
         }
     }
 
+    @Test
+    fun `present - loads mapped contacts when contacts permission is granted`() = runTest {
+        val mappedUser = aMatrixUser("@alice:server.org", "Alice")
+        val presenter = createDefaultInvitePeoplePresenter(
+            phonebookMatrixContactsProvider = object : PhonebookMatrixContactsProvider {
+                override suspend fun getMappedMatrixContacts(): List<MatrixUser> = listOf(mappedUser)
+            },
+            permissionsPresenter = FakePermissionsPresenter(
+                initialState = aPermissionsState(
+                    showDialog = false,
+                    permission = Manifest.permission.READ_CONTACTS,
+                    permissionGranted = true,
+                )
+            ),
+            coroutineDispatchers = testCoroutineDispatchers(useUnconfinedTestDispatcher = true),
+        )
+
+        presenter.test {
+            var contactsState: DefaultInvitePeopleState? = null
+            run exit@{
+                repeat(10) {
+                    val state = awaitItemAsDefault()
+                    if (state.contacts.any { it.matrixUser.userId == mappedUser.userId }) {
+                        contactsState = state
+                        return@exit
+                    }
+                }
+            }
+            assertThat(contactsState).isNotNull()
+            assertThat(contactsState?.contacts?.map { it.matrixUser.userId }).contains(mappedUser.userId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - auto requests contacts permission on first screen open`() = runTest {
+        val permissionsPresenter = FakePermissionsPresenter(
+            initialState = aPermissionsState(
+                showDialog = false,
+                permission = Manifest.permission.READ_CONTACTS,
+                permissionGranted = false,
+            )
+        )
+        val presenter = createDefaultInvitePeoplePresenter(
+            permissionsPresenter = permissionsPresenter,
+            coroutineDispatchers = testCoroutineDispatchers(useUnconfinedTestDispatcher = true),
+        )
+
+        presenter.test {
+            var permissionRequestedState: DefaultInvitePeopleState? = null
+            run exit@{
+                repeat(10) {
+                    val state = awaitItemAsDefault()
+                    if (state.contactsPermissionState.showDialog) {
+                        permissionRequestedState = state
+                        return@exit
+                    }
+                }
+            }
+            assertThat(permissionRequestedState).isNotNull()
+            assertThat(permissionRequestedState?.contactsPermissionState?.permissionAlreadyAsked).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private suspend fun FakeUserRepository.emitStateWithUsers(
         users: List<MatrixUser>,
         isSearching: Boolean = false
@@ -647,6 +717,16 @@ fun TestScope.createDefaultInvitePeoplePresenter(
     coroutineDispatchers: CoroutineDispatchers = testCoroutineDispatchers(),
     appErrorStateService: AppErrorStateService = FakeAppErrorStateService(),
     matrixClient: MatrixClient = FakeMatrixClient(),
+    phonebookMatrixContactsProvider: PhonebookMatrixContactsProvider = object : PhonebookMatrixContactsProvider {
+        override suspend fun getMappedMatrixContacts(): List<MatrixUser> = emptyList()
+    },
+    permissionsPresenter: FakePermissionsPresenter = FakePermissionsPresenter(
+        initialState = aPermissionsState(
+            showDialog = false,
+            permission = Manifest.permission.READ_CONTACTS,
+            permissionGranted = true,
+        )
+    ),
 ): DefaultInvitePeoplePresenter {
     return DefaultInvitePeoplePresenter(
         joinedRoom = joinedRoom,
@@ -655,6 +735,8 @@ fun TestScope.createDefaultInvitePeoplePresenter(
         coroutineDispatchers = coroutineDispatchers,
         sessionCoroutineScope = backgroundScope,
         appErrorStateService = appErrorStateService,
+        phonebookMatrixContactsProvider = phonebookMatrixContactsProvider,
         matrixClient = matrixClient,
+        permissionsPresenterFactory = FakePermissionsPresenterFactory(permissionsPresenter),
     )
 }
