@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
   <string name="crypto_event_authenticity_mismatched_sender">"Отправитель события и владелец устройства не совпадают."</string>
   <string name="crypto_event_authenticity_not_guaranteed">"Подлинность этого зашифрованного сообщения не может быть гарантирована на этом устройстве."</string>
@@ -38,11 +38,11 @@
   <string name="screen_room_attachment_source_location">"Местоположение"</string>
   <string name="screen_room_attachment_source_poll">"Опрос"</string>
   <string name="screen_room_attachment_text_formatting">"Форматирование текста"</string>
-  <string name="screen_room_encrypted_history_banner">"В настоящее время история сообщений недоступна в этой комнате."</string>
-  <string name="screen_room_encrypted_history_banner_unverified">"История сообщений в этой комнате недоступна. Проверьте это устройство, чтобы увидеть историю сообщений."</string>
+  <string name="screen_room_encrypted_history_banner">"В настоящее время история сообщений недоступна в этой группе."</string>
+  <string name="screen_room_encrypted_history_banner_unverified">"История сообщений в этой группе недоступна. Проверьте это устройство, чтобы увидеть историю сообщений."</string>
   <string name="screen_room_invite_again_alert_message">"Хотите пригласить их снова?"</string>
-  <string name="screen_room_invite_again_alert_title">"Вы одни в этой комнате"</string>
-  <string name="screen_room_mentions_at_room_subtitle">"Уведомить всю комнату"</string>
+  <string name="screen_room_invite_again_alert_title">"Вы одни в этой группе"</string>
+  <string name="screen_room_mentions_at_room_subtitle">"Уведомить всю группу"</string>
   <string name="screen_room_mentions_at_room_title">"Все"</string>
   <string name="screen_room_retry_send_menu_send_again_action">"Отправить снова"</string>
   <string name="screen_room_retry_send_menu_title">"Не удалось отправить ваше сообщение"</string>
@@ -52,7 +52,7 @@
   <string name="screen_room_timeline_legacy_call">"Неподдерживаемый вызов. уточните, может ли звонящий использовать новое приложение Element X."</string>
   <string name="screen_room_timeline_less_reactions">"Показать меньше"</string>
   <string name="screen_room_timeline_message_copied">"Сообщение скопировано"</string>
-  <string name="screen_room_timeline_no_permission_to_post">"У вас нет разрешения публиковать сообщения в этой комнате"</string>
+  <string name="screen_room_timeline_no_permission_to_post">"У вас нет разрешения публиковать сообщения в этой группе"</string>
   <plurals name="screen_room_timeline_reaction_a11y">
     <item quantity="one">"%1$d участник отреагировал %2$s"</item>
     <item quantity="few">"%1$d участника отреагировало %2$s"</item>
@@ -69,14 +69,14 @@
   <string name="screen_room_timeline_reactions_show_reactions_summary">"Показать сводку реакций"</string>
   <string name="screen_room_timeline_read_marker_title">"Новый"</string>
   <plurals name="screen_room_timeline_state_changes">
-    <item quantity="one">"%1$d изменение в комнате"</item>
-    <item quantity="few">"%1$d изменения в комнате"</item>
-    <item quantity="many">"%1$d изменений в комнате"</item>
+    <item quantity="one">"%1$d изменение в группе"</item>
+    <item quantity="few">"%1$d изменения в группе"</item>
+    <item quantity="many">"%1$d изменений в группе"</item>
   </plurals>
-  <string name="screen_room_timeline_tombstoned_room_action">"Перейти в новую комнату"</string>
-  <string name="screen_room_timeline_tombstoned_room_message">"Эта комната была заменена и больше не активна"</string>
+  <string name="screen_room_timeline_tombstoned_room_action">"Перейти в новую группу"</string>
+  <string name="screen_room_timeline_tombstoned_room_message">"Эта группа была заменена и больше не активна"</string>
   <string name="screen_room_timeline_upgraded_room_action">"Посмотреть старые сообщения"</string>
-  <string name="screen_room_timeline_upgraded_room_message">"Эта комната является продолжением другой комнаты"</string>
+  <string name="screen_room_timeline_upgraded_room_message">"Эта группа является продолжением другой группы"</string>
   <plurals name="screen_room_typing_many_members">
     <item quantity="one">"%1$s, %2$s и %3$d"</item>
     <item quantity="few">"%1$s, %2$s и другие %3$d"</item>

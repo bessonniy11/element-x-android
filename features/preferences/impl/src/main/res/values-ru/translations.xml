@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
   <string name="full_screen_intent_banner_message">"Чтобы больше не пропускать важные звонки, разрешите приложению показывать полноэкранные уведомления на заблокированном экране телефона."</string>
   <string name="full_screen_intent_banner_title">"Улучшите качество звонков"</string>
@@ -8,7 +8,7 @@
   <string name="screen_advanced_settings_element_call_base_url">"Базовый URL сервера звонков Element"</string>
   <string name="screen_advanced_settings_element_call_base_url_description">"Задайте свой сервер Element Call."</string>
   <string name="screen_advanced_settings_element_call_base_url_validation_error">"Адрес указан неверно, удостоверьтесь, что вы указали протокол (http/https) и правильный адрес."</string>
-  <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Скрыть аватары в запросах на приглашение в комнату"</string>
+  <string name="screen_advanced_settings_hide_invite_avatars_toggle_title">"Скрыть аватары в запросах на приглашение в группу"</string>
   <string name="screen_advanced_settings_hide_timeline_media_toggle_title">"Скрыть предварительный просмотр медиафайлов на временной шкале"</string>
   <string name="screen_advanced_settings_labs">"Лаборатория"</string>
   <string name="screen_advanced_settings_media_compression_description">"Загружайте фотографии и видео быстрее и сокращайте потребление трафика"</string>
@@ -29,7 +29,7 @@
   <string name="screen_advanced_settings_share_presence_description">"Если выключено, вы не сможете отправлять, получать уведомления о прочтении и наборе текста"</string>
   <string name="screen_advanced_settings_show_media_timeline_always_hide">"Всегда скрывать"</string>
   <string name="screen_advanced_settings_show_media_timeline_always_show">"Всегда показывать"</string>
-  <string name="screen_advanced_settings_show_media_timeline_private_rooms">"В личных комнатах"</string>
+  <string name="screen_advanced_settings_show_media_timeline_private_rooms">"В личных группах"</string>
   <string name="screen_advanced_settings_show_media_timeline_subtitle">"Скрытый медиафайл всегда можно отобразить, нажав на него."</string>
   <string name="screen_advanced_settings_show_media_timeline_title">"Показать медиафайлы в хронологии"</string>
   <string name="screen_advanced_settings_view_source_description">"Включить опцию просмотра источника сообщения в ленте."</string>
@@ -66,7 +66,7 @@
   <string name="screen_notification_settings_failed_fixing_configuration">"Конфигурация не была исправлена, попробуйте еще раз."</string>
   <string name="screen_notification_settings_group_chats">"В групповых чатах"</string>
   <string name="screen_notification_settings_invite_for_me_label">"Приглашения"</string>
-  <string name="screen_notification_settings_mentions_only_disclaimer">"Ваш домашний сервер не поддерживает эту опцию в зашифрованных комнатах, в некоторых комнатах вы можете не получать уведомления."</string>
+  <string name="screen_notification_settings_mentions_only_disclaimer">"Ваш домашний сервер не поддерживает эту опцию в зашифрованных группах, в некоторых группах вы можете не получать уведомления."</string>
   <string name="screen_notification_settings_mentions_section_title">"Упоминания"</string>
   <string name="screen_notification_settings_mode_all">"Все"</string>
   <string name="screen_notification_settings_mode_mentions">"Упоминания"</string>

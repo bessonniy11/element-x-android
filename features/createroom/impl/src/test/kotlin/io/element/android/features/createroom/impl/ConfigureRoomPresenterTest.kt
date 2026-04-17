@@ -506,6 +506,25 @@ class ConfigureRoomPresenterTest {
     }
 
     @Test
+    fun `present - creating a space only supports private visibility`() = runTest {
+        val presenter = createConfigureRoomPresenter(isSpace = true)
+        presenter.test {
+            val initialState = initialState()
+            assertThat(initialState.availableJoinRules).containsExactly(JoinRuleItem.PrivateVisibility.Private)
+
+            // Public visibility can still be set by a direct event, but it must be normalized back to private.
+            initialState.eventSink(ConfigureRoomEvents.JoinRuleChanged(JoinRuleItem.PublicVisibility.Public))
+            val firstUpdate = awaitItem()
+            val finalUpdate = if (firstUpdate.config.visibilityState is RoomVisibilityState.Public) {
+                awaitItem()
+            } else {
+                firstUpdate
+            }
+            assertThat(finalUpdate.config.visibilityState).isEqualTo(RoomVisibilityState.Private(JoinRuleItem.PrivateVisibility.Private))
+        }
+    }
+
+    @Test
     fun `present - setting a parent space for a space currently throws an error`() = runTest {
         val presenter = createConfigureRoomPresenter(isSpace = true)
         presenter.test {

@@ -10,6 +10,7 @@ rootProject.name = "ElementX_plugins"
 
 dependencyResolutionManagement {
     repositories {
+        google()
         mavenCentral()
     }
     versionCatalogs {
