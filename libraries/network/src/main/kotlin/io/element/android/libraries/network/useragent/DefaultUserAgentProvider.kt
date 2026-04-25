@@ -21,6 +21,10 @@ class DefaultUserAgentProvider(
     private val buildMeta: BuildMeta,
     private val sdkMeta: SdkMetadata,
 ) : UserAgentProvider {
+    companion object {
+        private val WhitespaceRegex = "\\s+".toRegex()
+    }
+
     private val userAgent: String by lazy { buildUserAgent() }
 
     override fun provide(): String = userAgent
@@ -30,13 +34,13 @@ class DefaultUserAgentProvider(
      * Ex: Element X/1.5.0 (Xiaomi Mi 9T; Android 11; RKQ1.200826.002; Sdk c344b155c)
      */
     private fun buildUserAgent(): String {
-        val appName = buildMeta.applicationName
-        val appVersion = buildMeta.versionName
-        val deviceManufacturer = Build.MANUFACTURER
-        val deviceModel = Build.MODEL
-        val androidVersion = Build.VERSION.RELEASE
-        val deviceBuildId = Build.DISPLAY
-        val matrixSdkVersion = sdkMeta.sdkGitSha
+        val appName = sanitizeForHeader(buildMeta.applicationName, fallback = buildMeta.applicationId)
+        val appVersion = sanitizeForHeader(buildMeta.versionName, fallback = "0")
+        val deviceManufacturer = sanitizeForHeader(Build.MANUFACTURER, fallback = "unknown")
+        val deviceModel = sanitizeForHeader(Build.MODEL, fallback = "unknown")
+        val androidVersion = sanitizeForHeader(Build.VERSION.RELEASE, fallback = "unknown")
+        val deviceBuildId = sanitizeForHeader(Build.DISPLAY, fallback = "unknown")
+        val matrixSdkVersion = sanitizeForHeader(sdkMeta.sdkGitSha, fallback = "unknown")
 
         return buildString {
             append(appName)
@@ -56,5 +60,19 @@ class DefaultUserAgentProvider(
             append(matrixSdkVersion)
             append(")")
         }
+    }
+
+    private fun sanitizeForHeader(value: String, fallback: String): String {
+        val sanitized = value
+            .map { char ->
+                when (char.code) {
+                    in 0x20..0x7E -> char
+                    else -> '-'
+                }
+            }
+            .joinToString("")
+            .trim()
+            .replace(WhitespaceRegex, " ")
+        return sanitized.ifEmpty { fallback }
     }
 }
